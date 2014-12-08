@@ -58,7 +58,7 @@ kernel.iso: kernel.bin
 $(OBJECTS): Makefile
 
 %.c.d: %.c
-	$(CC) -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
+	$(CC) -I. -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
 
 %.c.o: %.c
 	$(CC) $(C32FLAGS) -c -o $@ $<
