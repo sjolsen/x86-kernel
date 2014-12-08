@@ -1,7 +1,7 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-#include "multiboot.h"
+#include "multiboot/multiboot.h"
 
 extern const void _kimage_start;
 extern const void _stack_bottom;
