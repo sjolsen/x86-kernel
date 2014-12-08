@@ -21,7 +21,8 @@ typedef struct __attribute__ ((packed)) __attribute__ ((aligned (8))) {
 	uint8_t  privilege   : 2;
 	uint8_t  present     : 1;
 	uint8_t  limit_high  : 4;
-	uint8_t  zero        : 2; // Unused
+	uint8_t  zero        : 1; // Unused
+	uint8_t  mode64      : 1;
 	uint8_t  mode32      : 1;
 	uint8_t  granularity : 1;
 	uint8_t  base_high2;
