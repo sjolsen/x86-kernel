@@ -50,7 +50,7 @@ kernel.iso: kernel.bin
 	cp $< $(ISODIR)/boot/
 	mkdir -p $(ISODIR)/boot/grub
 	echo 'menuentry "'"$(OSNAME)"'" {\n multiboot /boot/'"$<"'\n}' > $(ISODIR)/boot/grub/grub.cfg
-	pc-grub-mkrescue -o $@ $(ISODIR)
+	grub-mkrescue -o $@ $(ISODIR)
 	rm -rf $(ISODIR)
 
 -include $(DEPENDS)
