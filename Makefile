@@ -9,8 +9,8 @@ override C32FLAGS:=$(CFLAGS) $(C32FLAGS) -march=i686 -m32
 override C64FLAGS:=$(CFLAGS) $(C64FLAGS) -m64
 LD = ld
 override LDFLAGS:=$(LDFLAGS) -nostdlib
-override LD32FLAGS:=$(LD32FLAGS) -march=i686 -melf_i386
-override LD64FLAGS:=$(LD64FLAGS)
+override LD32FLAGS:=$(LDFLAGS) $(LD32FLAGS) -march=i686 -melf_i386
+override LD64FLAGS:=$(LDFLAGS) $(LD64FLAGS)
 
 NOROMFLAG = -netdev user,id=hostnet0 -device virtio-net-pci,romfile=,netdev=hostnet0 # Kill iPXE option ROM
 override QEMUFLAGS:=$(NOROMFLAG) $(QEMUFLAGS)
