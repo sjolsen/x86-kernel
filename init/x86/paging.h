@@ -118,7 +118,7 @@ typedef struct {
 	uint64_t PAT             : 1;
 	uint64_t global          : 1;
 	uint64_t                 : 3;
-	uint64_t PT_address      : 40; // Maps a 4 kiB page
+	uint64_t address         : 40; // Maps a 4 kiB page
 	uint64_t                 : 11;
 	uint64_t execute_disable : 1;
 } PTE;
