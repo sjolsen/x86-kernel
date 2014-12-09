@@ -24,7 +24,7 @@ _start:
         popl %eax
 
         # Go to long mode
-        ljmp _longmode_start
+        ljmp *_longmode_start
 
         .code64
         .global _longmode_start
