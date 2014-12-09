@@ -1,4 +1,3 @@
-#include "kernel.h"
 #include "vga/tinyvga.h"
 #include "x86/cpuid.h"
 #include "x86/GDT.h"
@@ -81,21 +80,7 @@ void enable_paging (void)
 	);
 }
 
-static inline
-bool LMA_set (void)
-{
-	register uint32_t tmp = 0;
-	__asm__ (
-		"mov $0xC0000080, %%ecx;" // EFER MSR
-		"rdmsr;"
-		"and (1<<10), %0;"
-		: "=a" (tmp)
-	);
-	return tmp != 0;
-}
-
-void kernel_main (__attribute__ ((unused)) multiboot_info_t* info,
-                  __attribute__ ((unused)) multiboot_uint32_t magic)
+void init (void)
 {
 	vga = vga_initialize ();
 	vga_clear (&vga);
@@ -124,9 +109,4 @@ void kernel_main (__attribute__ ((unused)) multiboot_info_t* info,
 
 	enable_paging ();
 	vga_putline (&vga, "Paging enabled.");
-
-	if (LMA_set ())
-		vga_putline (&vga, "LMA set.");
-	else
-		vga_putline (&vga, "LMA not set.");
 }

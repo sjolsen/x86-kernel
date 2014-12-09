@@ -1,25 +1,15 @@
 OSNAME = "Unnamed kernel"
 
-AS = as
-override AS32FLAGS:=$(ASFLAGS) $(AS32FLAGS) -march=i686 --32
-override AS64FLAGS:=$(ASFLAGS) $(AS64FLAGS) --64
-CC = gcc
-override CFLAGS:=$(CFLAGS) -I. -std=gnu99 -ffreestanding -Os -Wall -Wextra -Werror
-override C32FLAGS:=$(CFLAGS) $(C32FLAGS) -march=i686 -m32
-override C64FLAGS:=$(CFLAGS) $(C64FLAGS) -m64
-LD = ld
-override LDFLAGS:=$(LDFLAGS) -nostdlib
-override LD32FLAGS:=$(LDFLAGS) $(LD32FLAGS) -march=i686 -melf_i386
-override LD64FLAGS:=$(LDFLAGS) $(LD64FLAGS)
+include toolchain.mk
 
 NOROMFLAG = -netdev user,id=hostnet0 -device virtio-net-pci,romfile=,netdev=hostnet0 # Kill iPXE option ROM
 override QEMUFLAGS:=$(NOROMFLAG) $(QEMUFLAGS)
 
-CSOURCES := $(shell find -name '*.c')
+CSOURCES := $(shell find -name '*.c' -not -path './init/*')
 COBJECTS := $(patsubst %.c,%.c.o,$(CSOURCES))
 CDEPENDS := $(patsubst %.c,%.c.d,$(CSOURCES))
 
-ASMSOURCES := $(shell find -name '*.s')
+ASMSOURCES := $(shell find -name '*.s' -not -path './init/*')
 ASMOBJECTS := $(patsubst %.s,%.s.o,$(ASMSOURCES))
 
 DEPENDS := $(CDEPENDS)
@@ -40,8 +30,8 @@ clean:
 cleandeps:
 	rm -f $(DEPENDS)
 
-kernel.bin: kernel.ld $(OBJECTS)
-	$(LD) $(LD32FLAGS) -T $< -o $@ $(OBJECTS) --gc-sections #--print-gc-sections
+kernel.bin: kernel.ld $(OBJECTS) init/init.o
+	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o --gc-sections #--print-gc-sections
 
 kernel.iso: kernel.bin
 	$(eval ISODIR := $(shell mktemp -d))
@@ -53,6 +43,10 @@ kernel.iso: kernel.bin
 	grub-mkrescue -o $@ $(ISODIR)
 	rm -rf $(ISODIR)
 
+.PHONY: init/init.o
+init/init.o:
+	$(MAKE) -C ./init
+
 -include $(DEPENDS)
 
 $(OBJECTS): Makefile
@@ -61,7 +55,7 @@ $(OBJECTS): Makefile
 	$(CC) -I. -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
 
 %.c.o: %.c
-	$(CC) $(C32FLAGS) -c -o $@ $<
+	$(CC) $(C64FLAGS) -c -o $@ $<
 
 %.s.o: %.s
-	$(AS) $(AS32FLAGS) -o $@ $<
+	$(AS) $(AS64FLAGS) -o $@ $<
