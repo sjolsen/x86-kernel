@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 static tinyvga vga;
-static GDT_entry GDT [3];
+static GDT_entry GDT [4];
 static PML4_table pml4_table;
 static PDP_table pdp_table;
 
@@ -18,21 +18,36 @@ bool capable_64 (void)
 	return cpuid (0x80000001).EDX & (1 << 29);
 }
 
+extern const void _ktext_base;
+
 static inline
 void paging_initialize (void)
 {
-	pml4_table [0] = (PML4E) {
+	pml4_table [1] = (PML4E) {
 		.present         = 1,
 		.writable        = 1,
+		.user            = 0,
+		.write_through   = 0,
+		.cache_disable   = 0,
+		.accessed        = 0,
+		.reserved        = 0, // Must be 0
 		.PDPT_address    = (uint32_t) &pdp_table,
 		.execute_disable = 0
 	};
 	pdp_table [0] = (PDPTE) {
 		.direct = {
-			.present = 1,
-			.writable = 1,
-			.page_size = 1,
-			.page_address = (uint64_t) 0,
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.page_size       = 1, // Must be 1
+			.global          = 1,
+			.PAT             = 0,
+			.reserved        = 0,
+			.page_address    = (uint32_t) &_ktext_base,
 			.execute_disable = 0,
 		}
 	};

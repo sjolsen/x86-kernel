@@ -8,7 +8,7 @@ _stack_top:
 
 # The linker script specifies _start as the entry point to the kernel and the
 # bootloader will jump to this position once the kernel has been loaded.
-.section .text
+.section .text32
         .code32
 	.global _start
 _start:
@@ -24,8 +24,11 @@ _start:
         popl %eax
 
         # Go to long mode
-        ljmp *_longmode_start
+	pushl $3
+	pushl $_longmode_start
+        lret
 
+.section .text
         .code64
         .global _longmode_start
 _longmode_start:
@@ -39,4 +42,3 @@ _longmode_start:
 .Lhang:
 	hlt
 	jmp .Lhang
-	.size _start, . - _start

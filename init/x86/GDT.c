@@ -4,7 +4,8 @@
 static inline
 GDT_entry make_code_GDT (uint32_t base, uint32_t limit,
                          bool readable, bool conforming,
-                         uint8_t privilege, bool page_granularity)
+                         uint8_t privilege, bool page_granularity,
+                         bool long_mode)
 {
 	return (GDT_entry) {
 		.limit_low   = limit & 0xFFFF,
@@ -19,8 +20,8 @@ GDT_entry make_code_GDT (uint32_t base, uint32_t limit,
 		.present     = 1,
 		.limit_high  = (limit >> 16) & 0xFF,
 		.zero        = 0,
-		.mode64      = 1,
-		.mode32      = 1,
+		.mode64      = long_mode ? 1 : 0,
+		.mode32      = long_mode ? 0 : 1,
 		.granularity = page_granularity,
 		.base_high2  = (base >> 24) & 0xFF
 	};
@@ -29,7 +30,8 @@ GDT_entry make_code_GDT (uint32_t base, uint32_t limit,
 static inline
 GDT_entry make_data_GDT (uint32_t base, uint32_t limit,
                          bool writable, bool downward,
-                         uint8_t privilege, bool page_granularity)
+                         uint8_t privilege, bool page_granularity,
+                         bool long_mode)
 {
 	return (GDT_entry) {
 		.limit_low   = limit & 0xFFFF,
@@ -44,15 +46,15 @@ GDT_entry make_data_GDT (uint32_t base, uint32_t limit,
 		.present     = 1,
 		.limit_high  = (limit >> 16) & 0xFF,
 		.zero        = 0,
-		.mode64      = 1,
-		.mode32      = 1,
+		.mode64      = long_mode ? 1 : 0,
+		.mode32      = long_mode ? 0 : 1,
 		.granularity = page_granularity,
 		.base_high2  = (base >> 24) & 0xFF
 	};
 }
 
 extern
-void install_GDT (const GDT_entry GDT [static 3], uint16_t entries);
+void install_GDT (const GDT_entry GDT [static 4], uint16_t entries);
 
 static inline
 void reload_segments (uint16_t code_selector, uint16_t data_selector)
@@ -73,15 +75,20 @@ void reload_segments (uint16_t code_selector, uint16_t data_selector)
 	);
 }
 
+extern const void _ktext_base;
+
 
 // Extern functions
 
-void GDT_initialize (GDT_entry GDT [static 3])
+void GDT_initialize (GDT_entry GDT [static 4])
 {
-	GDT [KERNEL_NULL_SELECTOR] = make_data_GDT (0, 0, false, false, 0, 0);
-	GDT [KERNEL_CODE_SELECTOR] = make_code_GDT (0, -1, true, false, 0, 1);
-	GDT [KERNEL_DATA_SELECTOR] = make_data_GDT (0, -1, true, false, 0, 1);
+	GDT [KERNEL_NULL_SELECTOR] = make_data_GDT (0, 0, false, false, 0, 0, false);
+	GDT [KERNEL_INIT_SELECTOR] = make_code_GDT (0, -1, true, false, 0, 1, false);
+	GDT [KERNEL_DATA_SELECTOR] = make_data_GDT (0, -1, true, false, 0, 1, false);
+	uint32_t base = (uint32_t) &_ktext_base;
+	uint32_t limit = (uint32_t) 0x0FFF;
+	GDT [KERNEL_TEXT_SELECTOR] = make_data_GDT (base, limit, true, false, 0, 0, true);
 
 	install_GDT (GDT, 3);
-	reload_segments (KERNEL_CODE_SELECTOR, KERNEL_DATA_SELECTOR);
+	reload_segments (KERNEL_INIT_SELECTOR, KERNEL_DATA_SELECTOR);
 }

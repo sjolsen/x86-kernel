@@ -1,9 +1,12 @@
 SECTIONS
 {
-	.inittext BLOCK(4K) : ALIGN(4K)
+	.multiboot BLOCK(4K) : ALIGN(4K)
 	{
-		KEEP(*(.multiboot))
 		*(.multiboot)
+	}
+
+	.text32 BLOCK(4K) : ALIGN(4K)
+	{
 		*(.text*)
 	}
 

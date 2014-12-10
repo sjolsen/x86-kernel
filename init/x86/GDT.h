@@ -5,8 +5,9 @@
 
 enum {
 	KERNEL_NULL_SELECTOR = 0,
-	KERNEL_CODE_SELECTOR = 1,
-	KERNEL_DATA_SELECTOR = 2
+	KERNEL_INIT_SELECTOR = 1,
+	KERNEL_DATA_SELECTOR = 2,
+	KERNEL_TEXT_SELECTOR = 3
 };
 
 typedef struct __attribute__ ((packed)) __attribute__ ((aligned (8))) {
