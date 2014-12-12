@@ -114,9 +114,7 @@ void GDT_initialize (GDT* gdt, TSS_64* tss)
 	gdt->GDTEs [KERNEL_NULL_SELECTOR] = make_data_GDT (0, 0, false, false, 0, 0, false);
 	gdt->GDTEs [KERNEL_INIT_SELECTOR] = make_code_GDT (0, -1, true, false, 0, 1, false);
 	gdt->GDTEs [KERNEL_DATA_SELECTOR] = make_data_GDT (0, -1, true, false, 0, 1, false);
-	uint32_t base = (uint32_t) &_ktext_base;
-	uint32_t limit = (uint32_t) 0x0FFF;
-	gdt->GDTEs [KERNEL_TEXT_SELECTOR] = make_data_GDT (base, limit, true, false, 0, 0, true);
+	gdt->GDTEs [KERNEL_TEXT_SELECTOR] = make_code_GDT (0, -1, true, false, 0, 1, true);
 	gdt->TSSD = make_TSSD (tss, 0);
 
 	install_GDT (gdt, sizeof (GDT) / sizeof (GDT_entry));
