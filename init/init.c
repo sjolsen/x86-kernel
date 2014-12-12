@@ -35,7 +35,7 @@ void paging_initialize (void)
 		.cache_disable   = 0,
 		.accessed        = 0,
 		.reserved        = 0, // Must be 0
-		.PDPT_address    = (uint32_t) &pdp_table,
+		.PDPT_address    = (uint32_t) &pdp_table >> 12,
 		.execute_disable = 0
 	};
 	// Identity-map most of the kernel
@@ -48,7 +48,7 @@ void paging_initialize (void)
 			.cache_disable   = 0,
 			.accessed        = 0,
 			.page_size       = 0, // Must be 0
-			.PD_address      = (uint32_t) &page_directory,
+			.PD_address      = (uint32_t) &page_directory >> 12,
 			.execute_disable = 0,
 		}
 	};
@@ -65,7 +65,7 @@ void paging_initialize (void)
 			.global          = 1,
 			.PAT             = 0,
 			.reserved        = 0,
-			.page_address    = (uint32_t) 0,
+			.page_address    = (uint32_t) 0 >> 21,
 			.execute_disable = 0
 		}
 	};
@@ -79,7 +79,7 @@ void paging_initialize (void)
 			.cache_disable   = 0,
 			.accessed        = 0,
 			.page_size       = 0, // Must be 0
-			.PD_address      = (uint32_t) &high_page_directory,
+			.PD_address      = (uint32_t) &high_page_directory >> 12,
 			.execute_disable = 0,
 		}
 	};
@@ -96,7 +96,7 @@ void paging_initialize (void)
 			.global          = 1,
 			.PAT             = 0,
 			.reserved        = 0,
-			.page_address    = (uint32_t) &_ktext_base,
+			.page_address    = (uint32_t) &_ktext_base >> 21,
 			.execute_disable = 0
 		}
 	};
