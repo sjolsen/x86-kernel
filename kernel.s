@@ -24,7 +24,7 @@ _start:
         popl %eax
 
         # Go to long mode
-	pushl $3
+	pushl $(3 << 3)
 	pushl $_longmode_start
         lret
 

@@ -40,7 +40,7 @@ SECTIONS
         _ktext_base = .;
         .text 0x40000000 : AT(_ktext_base)
         {
-                /* _ktext_start = .; */
+                _ktext_start = .;
                 *(.text)
                 /* _ktext_end = .; */
         }

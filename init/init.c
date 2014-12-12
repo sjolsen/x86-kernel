@@ -8,7 +8,8 @@
 #include <stdbool.h>
 
 static tinyvga vga;
-static GDT_entry GDT [4];
+static GDT gdt;
+static TSS_64 tss;
 static PML4_table pml4_table;
 static PDP_table pdp_table;
 
@@ -19,11 +20,12 @@ bool capable_64 (void)
 }
 
 extern const void _ktext_base;
+extern const void _ktext_start;
 
 static inline
 void paging_initialize (void)
 {
-	pml4_table [1] = (PML4E) {
+	pml4_table [0] = (PML4E) {
 		.present         = 1,
 		.writable        = 1,
 		.user            = 0,
@@ -34,7 +36,7 @@ void paging_initialize (void)
 		.PDPT_address    = (uint32_t) &pdp_table,
 		.execute_disable = 0
 	};
-	pdp_table [0] = (PDPTE) {
+	pdp_table [1] = (PDPTE) {
 		.direct = {
 			.present         = 1,
 			.writable        = 1,
@@ -57,9 +59,9 @@ static inline
 void enable_PAE (void)
 {
 	register uint32_t tmp = 0;
-	__asm__ (
+	__asm__ volatile (
 		"mov %%cr4, %0;"
-		"or (1<<5), %0;"
+		"or $(1<<5), %0;"
 		"mov %0, %%cr4"
 		: "+r" (tmp)
 	);
@@ -69,7 +71,7 @@ static inline
 void load_PML4 (PML4_table* table)
 {
 	register uint32_t tmp = (uint32_t) &(*table)[0];
-	__asm__ (
+	__asm__ volatile (
 		"movl %0, %%cr3"
 		:: "r" (tmp)
 	);
@@ -78,10 +80,10 @@ void load_PML4 (PML4_table* table)
 static inline
 void enable_LM (void)
 {
-	__asm__ (
+	__asm__ volatile (
 		"mov $0xC0000080, %ecx;" // EFER MSR
 		"rdmsr;"
-		"or (1<<8), %eax;"
+		"or $(1<<8), %eax;"
 		"wrmsr"
 	);
 }
@@ -90,9 +92,9 @@ static inline
 void enable_paging (void)
 {
 	register uint32_t tmp = 0;
-	__asm__ (
+	__asm__ volatile (
 		"mov %%cr0, %0;"
-		"or (1<<31), %0;"
+		"or $(1<<31), %0;"
 		"mov %0, %%cr0"
 		: "+r" (tmp)
 	);
@@ -162,7 +164,7 @@ void init (void)
 {
 	vga = vga_initialize ();
 	vga_clear (&vga);
-
+	#define vga_putline(...)
 	if (capable_64 ())
 		vga_putline (&vga, "64-bit capable.");
 	else {
@@ -170,7 +172,7 @@ void init (void)
 		return;
 	}
 
-	GDT_initialize (GDT);
+	GDT_initialize (&gdt, &tss);
 	vga_putline (&vga, "GDT initialized.");
 
 	initialize_interrupts ();
@@ -190,4 +192,16 @@ void init (void)
 
 	enable_paging ();
 	vga_putline (&vga, "Paging enabled.");
+
+	/* for (int i = 0; i < 100; ++i) */
+	/* { */
+	/* 	static const char tbl [] = "0123456789ABCDEF"; */
+
+	/* 	const uint8_t b = ((uint8_t*)&_ktext_start) [i]; */
+	/* 	const uint8_t b0 = b & 0xF; */
+	/* 	const uint8_t b1 = b >> 4; */
+	/* 	vga_putchar (&vga, tbl [b1]); */
+	/* 	vga_putchar (&vga, tbl [b0]); */
+	/* 	vga_putchar (&vga, ' '); */
+	/* } */
 }
