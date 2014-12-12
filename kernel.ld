@@ -37,7 +37,7 @@ SECTIONS
 		*(.bootstrap_stack)
 	}
 
-        _ktext_base = .;
+        _ktext_base = 2M;
         .text 0x40000000 : AT(_ktext_base)
         {
                 _ktext_start = .;

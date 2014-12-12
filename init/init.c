@@ -12,6 +12,8 @@ static GDT gdt;
 static TSS_64 tss;
 static PML4_table pml4_table;
 static PDP_table pdp_table;
+static Page_directory page_directory;
+static Page_directory high_page_directory;
 
 static inline
 bool capable_64 (void)
@@ -36,21 +38,66 @@ void paging_initialize (void)
 		.PDPT_address    = (uint32_t) &pdp_table,
 		.execute_disable = 0
 	};
-	pdp_table [1] = (PDPTE) {
-		.direct = {
+	// Identity-map most of the kernel
+	pdp_table [0] = (PDPTE) {
+		.indirect = {
 			.present         = 1,
 			.writable        = 1,
 			.user            = 0,
 			.write_through   = 0,
 			.cache_disable   = 0,
 			.accessed        = 0,
-			.dirty           = 0,
-			.page_size       = 1, // Must be 1
-			.global          = 1,
-			.PAT             = 0,
-			.reserved        = 0,
-			.page_address    = (uint32_t) &_ktext_base,
+			.page_size       = 0, // Must be 0
+			.PD_address      = (uint32_t) &page_directory,
 			.execute_disable = 0,
+		}
+	};
+	page_directory [0] = (PDE) {
+		.direct = {
+			.present = 1,
+			.writable = 1,
+			.user = 0,
+			.write_through = 0,
+			.cache_disable = 0,
+			.accessed = 0,
+			.dirty = 0,
+			.page_size = 1, // Must be 1
+			.global = 1,
+			.PAT = 0,
+			.reserved = 0,
+			.page_address = (uint32_t) 0,
+			.execute_disable = 0
+		}
+	};
+	// Map the 64-bit code at 0x40000000
+	pdp_table [1] = (PDPTE) {
+		.indirect = {
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.page_size       = 0, // Must be 0
+			.PD_address      = (uint32_t) &high_page_directory,
+			.execute_disable = 0,
+		}
+	};
+	page_directory [0] = (PDE) {
+		.direct = {
+			.present = 1,
+			.writable = 1,
+			.user = 0,
+			.write_through = 0,
+			.cache_disable = 0,
+			.accessed = 0,
+			.dirty = 0,
+			.page_size = 1, // Must be 1
+			.global = 1,
+			.PAT = 0,
+			.reserved = 0,
+			.page_address = (uint32_t) &_ktext_base,
+			.execute_disable = 0
 		}
 	};
 }
