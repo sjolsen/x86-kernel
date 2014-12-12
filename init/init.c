@@ -211,7 +211,7 @@ void init (void)
 {
 	vga = vga_initialize ();
 	vga_clear (&vga);
-	#define vga_putline(...)
+
 	if (capable_64 ())
 		vga_putline (&vga, "64-bit capable.");
 	else {
