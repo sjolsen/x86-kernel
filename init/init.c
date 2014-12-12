@@ -54,18 +54,18 @@ void paging_initialize (void)
 	};
 	page_directory [0] = (PDE) {
 		.direct = {
-			.present = 1,
-			.writable = 1,
-			.user = 0,
-			.write_through = 0,
-			.cache_disable = 0,
-			.accessed = 0,
-			.dirty = 0,
-			.page_size = 1, // Must be 1
-			.global = 1,
-			.PAT = 0,
-			.reserved = 0,
-			.page_address = (uint32_t) 0,
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.page_size       = 1, // Must be 1
+			.global          = 1,
+			.PAT             = 0,
+			.reserved        = 0,
+			.page_address    = (uint32_t) 0,
 			.execute_disable = 0
 		}
 	};
@@ -83,20 +83,20 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	page_directory [0] = (PDE) {
+	high_page_directory [0] = (PDE) {
 		.direct = {
-			.present = 1,
-			.writable = 1,
-			.user = 0,
-			.write_through = 0,
-			.cache_disable = 0,
-			.accessed = 0,
-			.dirty = 0,
-			.page_size = 1, // Must be 1
-			.global = 1,
-			.PAT = 0,
-			.reserved = 0,
-			.page_address = (uint32_t) &_ktext_base,
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.page_size       = 1, // Must be 1
+			.global          = 1,
+			.PAT             = 0,
+			.reserved        = 0,
+			.page_address    = (uint32_t) &_ktext_base,
 			.execute_disable = 0
 		}
 	};
