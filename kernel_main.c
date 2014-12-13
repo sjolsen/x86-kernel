@@ -1,19 +1,14 @@
 #include <stdint.h>
-#include "vga/tinyvga.h"
-
-static tinyvga vga;
+#include <stddef.h>
 
 void kernel_main (void)
 {
-	register uint64_t tmp = 0;
-	__asm__ volatile (
-		"movq $(1 << 48), %0;"
-		"shr $32, %0;"
-		: "+r" (tmp)
-	);
+	const char* str = "Success.";
 
-	vga = vga_initialize ();
-	vga_clear (&vga);
-	vga_putline (&vga, "64-bit boot successful!");
-	vga_putline (&vga, (tmp == (1 << 16) ? "GOOD" : "BAD"));
+	volatile uint16_t* vga_buffer = (volatile uint16_t*) 0xB8000;
+	size_t i = 0;
+	for (; i < 8; ++i)
+		vga_buffer [i] = (uint16_t)(str[i]) | ((uint16_t)7 << 8) | ((uint16_t)0) << 12;
+	for (; i < 80 * 25; ++i)
+		vga_buffer [i] = (uint16_t)' ' | ((uint16_t)7 << 8) | ((uint16_t)0) << 12;
 }
