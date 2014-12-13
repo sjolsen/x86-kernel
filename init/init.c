@@ -22,6 +22,7 @@ bool capable_64 (void)
 
 extern const void _ktext_base;
 extern const void _ktext_start;
+extern const void _ktext_end;
 
 static inline
 void paging_initialize (void)
@@ -82,23 +83,24 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	high_page_directory [0] = (PDE) {
-		.direct = {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.page_size       = 1, // Must be 1
-			.global          = 1,
-			.PAT             = 0,
-			.reserved        = 0,
-			.page_address    = (uint32_t) &_ktext_base >> 21,
-			.execute_disable = 0
-		}
-	};
+	for (int32_t i = 0; i < ((&_ktext_end - &_ktext_start + 0x001FFFFF) >> 21); ++i)
+		high_page_directory [i] = (PDE) {
+			.direct = {
+				.present         = 1,
+				.writable        = 1,
+				.user            = 0,
+				.write_through   = 0,
+				.cache_disable   = 0,
+				.accessed        = 0,
+				.dirty           = 0,
+				.page_size       = 1, // Must be 1
+				.global          = 1,
+				.PAT             = 0,
+				.reserved        = 0,
+				.page_address    = ((uint32_t) &_ktext_base >> 21) + i,
+				.execute_disable = 0
+			}
+		};
 }
 
 static inline

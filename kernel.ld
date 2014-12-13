@@ -42,7 +42,7 @@ SECTIONS
         {
                 _ktext_start = .;
                 *(.text)
-                /* _ktext_end = .; */
+                _ktext_end = .;
         }
 
 	/* The compiler may produce other sections, by default it will put them in
