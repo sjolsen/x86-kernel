@@ -2,7 +2,6 @@
 #include "x86/paging.h"
 #include <stdbool.h>
 
-static GDT gdt;
 static PML4_table pml4_table;
 static PDP_table pdp_table;
 static Page_directory page_directory;
@@ -158,7 +157,7 @@ void init (void)
 			"jmp .halt"
 		);
 
-	GDT_initialize (&gdt);
+	GDT_initialize ();
 	paging_initialize ();
 	enable_PAE ();
 	load_PML4 (&pml4_table);
