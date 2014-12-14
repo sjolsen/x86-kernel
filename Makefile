@@ -33,7 +33,7 @@ cleandeps:
 	make -C init cleandeps
 
 kernel.bin: kernel.ld $(OBJECTS) init/init.o
-	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o --gc-sections #--print-gc-sections
+	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
 
 kernel.iso: kernel.bin
 	$(eval ISODIR := $(shell mktemp -d))
