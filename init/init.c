@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 static GDT gdt;
+static TSS_64 tss;
 static PML4_table pml4_table;
 static PDP_table pdp_table;
 static Page_directory page_directory;
@@ -158,7 +159,7 @@ void init (void)
 			"jmp .halt"
 		);
 
-	GDT_initialize (&gdt);
+	GDT_initialize (&gdt, &tss);
 	paging_initialize ();
 	enable_PAE ();
 	load_PML4 (&pml4_table);

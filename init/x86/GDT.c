@@ -53,6 +53,28 @@ GDT_entry make_data_GDT (uint32_t base, uint32_t limit,
 	};
 }
 
+static inline
+TSS_descriptor make_TSSD (TSS_64* tss, uint8_t privilege)
+{
+	uint32_t base  = (uint32_t) tss;
+	uint32_t limit = sizeof (TSS_64) - 1;
+	return (TSS_descriptor) {
+		.limit_low   = limit & 0xFFFF,
+		.base_low    = base & 0xFFFF,
+		.base_high1  = (base >> 16) & 0xFF,
+		.type        = 0b1001,
+		.zero0       = 0,
+		.privilege   = privilege,
+		.present     = 1,
+		.limit_high  = (limit >> 16) & 0xFF,
+		.zero1       = 0,
+		.granularity = 0,
+		.base_high2  = (base >> 24) & 0xFF,
+		.base_high3  = 0,
+		.reserved    = 0
+	};
+}
+
 extern
 void install_GDT (GDT* gdt, uint16_t entries);
 
@@ -75,18 +97,27 @@ void reload_segments (uint16_t code_selector, uint16_t data_selector)
 	);
 }
 
+static inline
+void install_TSS (uint16_t selector)
+{
+	selector *= 8;
+	__asm__ ("ltr %0" :: "r" (selector));
+}
+
 extern const void _ktext_base;
 
 
 // Extern functions
 
-void GDT_initialize (GDT* gdt)
+void GDT_initialize (GDT* gdt, TSS_64* tss)
 {
 	gdt->GDTEs [KERNEL_NULL_SELECTOR] = make_data_GDT (0, 0, false, false, 0, 0, false);
 	gdt->GDTEs [KERNEL_INIT_SELECTOR] = make_code_GDT (0, -1, true, false, 0, 1, false);
 	gdt->GDTEs [KERNEL_DATA_SELECTOR] = make_data_GDT (0, -1, true, false, 0, 1, false);
 	gdt->GDTEs [KERNEL_TEXT_SELECTOR] = make_code_GDT (0, -1, true, false, 0, 1, true);
+	gdt->TSSD = make_TSSD (tss, 0);
 
 	install_GDT (gdt, sizeof (GDT) / sizeof (GDT_entry));
 	reload_segments (KERNEL_INIT_SELECTOR, KERNEL_DATA_SELECTOR);
+	install_TSS (TSS_SELECTOR);
 }
