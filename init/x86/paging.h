@@ -56,7 +56,8 @@ typedef struct {
 
 typedef union {
 	struct {
-		uint64_t           : 7;
+		uint64_t present   : 1;
+		uint64_t           : 6;
 		uint64_t page_size : 1;
 		uint64_t           : 54;
 	};
@@ -99,7 +100,8 @@ typedef struct {
 
 typedef union {
 	struct {
-		uint64_t           : 7;
+		uint64_t present   : 1;
+		uint64_t           : 6;
 		uint64_t page_size : 1;
 		uint64_t           : 56;
 	};
