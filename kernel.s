@@ -24,16 +24,17 @@ _start:
         popl %eax
 
         # Go to long mode
-        .code64
+        ljmpl $(3 << 3), $_longmode_trampoline
+
+_longmode_trampoline:
+	.code64
+
         movl %eax, %edi
         movl %ebx, %esi
-	movw $(3 << 3), %ax
-        pushw %ax
-	movabsq $kernel_main, %rax
-        pushq %rax
-	lretq
+        movabsq $kernel_main, %rax
+        call *%rax
 
-	# Hang indefinitely.
+       	# Hang indefinitely.
 	cli
 .Lhang:
 	hlt
