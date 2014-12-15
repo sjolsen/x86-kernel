@@ -3,7 +3,7 @@
 # Declare an interrupt handler delegating to C
 _ISR_entry:
 	call ISR_entry
-	popq %rax
+	popq %rdi
         popq %r11
         popq %r10
         popq %r9
@@ -11,7 +11,7 @@ _ISR_entry:
         popq %rdx
         popq %rcx
         popq %rax
-	iret
+	iretq
 
 	.macro .isr number name
 	.global \name
@@ -24,7 +24,8 @@ _ISR_entry:
         pushq %r9
         pushq %r10
         pushq %r11
-        pushq \number
+        pushq %rdi
+        movabsq \number, %rdi
         jmp _ISR_entry
 	.endm
 
