@@ -28,8 +28,18 @@ IDT_entry make_IDT_entry (void (*address) (void))
 			};
 }
 
-extern
-void install_IDT (IDT* idt, uint16_t entries);
+static __attribute__ ((noinline))
+void install_IDT (IDT* idt)
+{
+	struct __attribute__ ((packed)) {
+		uint16_t limit;
+		uint64_t offset;
+	} lidt_args = {
+		.limit  = sizeof (IDT) - 1,
+		.offset = (uint64_t) &((*idt) [0])
+	};
+	__asm__ volatile ("lidt %0" :: "m" (lidt_args));
+}
 
 
 // Extern functions
@@ -87,5 +97,5 @@ void IDT_initialize (IDT* idt)
 	(*idt) [0x2E] = make_IDT_entry (&_ISR_2E);
 	(*idt) [0x2F] = make_IDT_entry (&_ISR_2F);
 
-	install_IDT (idt, INT_LIMIT);
+	install_IDT (idt);
 }

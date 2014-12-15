@@ -15,10 +15,21 @@ static
 void halt (void)
 {
 		__asm__ volatile (
-		".halt:"
 			"cli;"
+		".halt:"
 			"hlt;"
 			"jmp .halt"
+		);
+}
+
+static
+void wait (void)
+{
+		__asm__ volatile (
+			"sti;"
+		".wait:"
+			"hlt;"
+			"jmp .wait"
 		);
 }
 
@@ -79,7 +90,9 @@ void kernel_main (__attribute__ ((unused)) multiboot_info_t* info,
 
 	ISR_table_initialize (&isrt, &debug_ISR);
 	IDT_initialize (&idt);
-	IRQ_disable (IRQ_PIT);
+	IRQ_enable (IRQ_PIT);
+
+	wait ();
 
 	halt ();
 }
