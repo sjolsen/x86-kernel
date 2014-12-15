@@ -93,7 +93,7 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	for (uint32_t i = 0; i < _ktext_size; i += 0x200000)
+	for (uint32_t i = 0; i < ktext_size; i += 0x200000)
 		high_page_directory [i] = (PDE) {
 			.direct = {
 				.present         = 1,
@@ -107,7 +107,7 @@ void paging_initialize (void)
 				.global          = 1,
 				.PAT             = 0,
 				.reserved        = 0,
-				.page_address    = ((uint32_t) &_ktext_base + i) >> 21,
+				.page_address    = ((uint32_t) ktext_base + i) >> 21,
 				.execute_disable = 0
 			}
 		};

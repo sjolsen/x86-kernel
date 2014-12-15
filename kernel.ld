@@ -21,9 +21,9 @@ SECTIONS
 	.rodata :
 	{
 		*(.rodata*)
-                _ktext_base = .;
+                ktext_base = .;
                 LONG(_ktext_base)
-                _ktext_size = .;
+                ktext_size = .;
                 QUAD(_ktext_end - _ktext_start)
 	}
 

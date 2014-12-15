@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern const uint32_t _ktext_base;
-extern const uint64_t _ktext_size;
+extern const uint32_t ktext_base;
+extern const uint64_t ktext_size;
 
 #endif
