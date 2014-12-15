@@ -1,0 +1,2 @@
+* x86-kernel
+This is a basic kernel for IA32e (also known as AMD64, x86_64, etc.) systems. It is compatible with multiboot-compliant bootloaders and can build a standalone CD image which uses GRUB2 to boot the kernel. It doesn't do very much at the moment but set up 64-bit execution.
