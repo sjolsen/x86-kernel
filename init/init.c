@@ -20,16 +20,43 @@ typedef struct {
 	uint16_t p;
 } page_indices;
 
-static inline
-uint64_t log2linaddr (uint64_t logaddr, bool* found, page_indices* indices)
+typedef enum {
+	found             = 0,
+	dunno             = 1,
+	noncanonical      = 2,
+	PML4E_not_present = 3,
+	PDPTE_not_present = 4,
+	PDE_not_present   = 5,
+	PTE_not_present   = 6
+} l2lstatus;
+
+static
+const char* l2lstatus_tostr (l2lstatus status)
 {
-	*found = false;
+	static const char* table [] = {
+		[found]             = "found",
+		[dunno]             = "unknown",
+		[noncanonical]      = "noncanonical",
+		[PML4E_not_present] = "PML4E not present",
+		[PDPTE_not_present] = "PDPTE not present",
+		[PDE_not_present]   = "PDE not present",
+		[PTE_not_present]   = "PTE not present"
+	};
+	return table [status];
+}
+
+static inline
+uint64_t log2linaddr (uint64_t logaddr, l2lstatus* status, page_indices* indices)
+{
+	*status = dunno;
 
 	// Check for canonical addresses
 	uint64_t highbits = logaddr & 0xFFFF800000000000;
 	if ((highbits != 0x0000000000000000) &&
-	    (highbits != 0xFFFF800000000000))
+	    (highbits != 0xFFFF800000000000)) {
+		*status = noncanonical;
 		return 0;
+	}
 	logaddr &= 0x0000FFFFFFFFFFFF;
 
 	// Grab paging indices
@@ -42,29 +69,37 @@ uint64_t log2linaddr (uint64_t logaddr, bool* found, page_indices* indices)
 	*indices = i;
 
 	// Translate
-	if (!pml4_table [i.pml4].present)
+	if (!pml4_table [i.pml4].present) {
+		*status = PML4E_not_present;
 		return 0;
+	}
 
 	const PDP_table* pdpt = (const PDP_table*) (uint32_t) (pml4_table [i.pml4].PDPT_address << 12);
-	if (!(*pdpt) [i.pdp].present)
+	if (!(*pdpt) [i.pdp].present) {
+		*status = PDPTE_not_present;
 		return 0;
+	}
 	if ((*pdpt) [i.pdp].page_size == 1) {
-		*found = true;
+		*status = found;
 		return ((*pdpt) [i.pdp].direct.page_address << 30) | (logaddr & 0x3FFFFFFF);
 	}
 
 	const Page_directory* pd = (const Page_directory*) (uint32_t) ((*pdpt) [i.pdp].indirect.PD_address << 12);
-	if (!(*pd) [i.pd].present)
+	if (!(*pd) [i.pd].present) {
+		*status = PDE_not_present;
 		return 0;
+	}
 	if ((*pd) [i.pd].page_size == 1) {
-		*found = true;
+		*status = found;
 		return ((*pd) [i.pd].direct.page_address << 21) | (logaddr & 0x0001FFFFF);
 	}
 
 	const Page_table* pt = (const Page_table*) (uint32_t) ((*pd) [i.pd].indirect.PT_address << 12);
-	if (!(*pt) [i.pt].present)
+	if (!(*pt) [i.pt].present) {
+		*status = PTE_not_present;
 		return 0;
-	*found = true;
+	}
+	*status = found;
 	return ((*pt) [i.pt].page_address << 12) | (logaddr & 0x00000FFF);
 }
 
@@ -248,19 +283,21 @@ void debug_addr (uint64_t addr)
 	print_64 (addr);
 	vga_put (&vga, ": ");
 
-	bool found = false;
+	l2lstatus status = dunno;
 	page_indices indices = {
 		.pml4 = 0,
 		.pdp  = 0,
 		.pd   = 0,
 		.pt   = 0
 	};
-	addr = log2linaddr (addr, &found, &indices);
+	addr = log2linaddr (addr, &status, &indices);
 
-	if (found)
+	if (status == found)
 		print_64 (addr);
 	else {
 		vga_put (&vga, "not found (");
+		vga_put (&vga, l2lstatus_tostr (status));
+		vga_put (&vga, ": ");
 		print_16 (indices.pml4);
 		vga_putchar (&vga, ' ');
 		print_16 (indices.pdp);
