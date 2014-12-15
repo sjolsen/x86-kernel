@@ -17,10 +17,10 @@ OBJECTS := $(COBJECTS) $(ASMOBJECTS)
 
 .PHONY: all depends test test-grub clean
 
-all: kernel.bin
+all: kernel.bin64 kernel.bin32
 depends: $(DEPENDS)
 
-test: kernel.bin
+test: kernel.bin32
 	qemu-system-x86_64 -kernel $< $(QEMUFLAGS)
 test-grub: kernel.iso
 	qemu-system-x86_64 -cdrom $< $(QEMUFLAGS)
@@ -28,11 +28,14 @@ test-grub: kernel.iso
 clean:
 	find '(' -name '*.d' -or -name '*.o' ')' -exec rm '{}' ';'
 
-kernel.bin: kernel.ld $(OBJECTS) init/init.o
+kernel.bin64: kernel.ld $(OBJECTS) init/init.o
 	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
+
+kernel.bin32: kernel.bin64
+	cp $< $@
 	objcopy -O elf32-i386 $@
 
-kernel.iso: kernel.bin
+kernel.iso: kernel.bin64
 	$(eval ISODIR := $(shell mktemp -d))
 	mkdir -p $(ISODIR)
 	mkdir -p $(ISODIR)/boot
