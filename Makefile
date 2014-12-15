@@ -15,7 +15,7 @@ ASMOBJECTS := $(patsubst %.s,%.s.o,$(ASMSOURCES))
 DEPENDS := $(CDEPENDS)
 OBJECTS := $(COBJECTS) $(ASMOBJECTS)
 
-.PHONY: all depends test test-grub clean cleandeps
+.PHONY: all depends test test-grub clean
 
 all: kernel.bin
 depends: $(DEPENDS)
@@ -26,11 +26,7 @@ test-grub: kernel.iso
 	qemu-system-x86_64 -cdrom $< $(QEMUFLAGS)
 
 clean:
-	rm -f kernel.iso kernel.bin $(OBJECTS)
-	make -C init clean
-cleandeps:
-	rm -f $(DEPENDS)
-	make -C init cleandeps
+	find '(' -name '*.d' -or -name '*.o' ')' -exec rm '{}' ';'
 
 kernel.bin: kernel.ld $(OBJECTS) init/init.o
 	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
@@ -42,7 +38,7 @@ kernel.iso: kernel.bin
 	cp $< $(ISODIR)/boot/
 	mkdir -p $(ISODIR)/boot/grub
 	echo 'menuentry "'"$(OSNAME)"'" {\n multiboot /boot/'"$<"'\n}' > $(ISODIR)/boot/grub/grub.cfg
-	grub-mkrescue -o $@ $(ISODIR)
+	pc-grub-mkrescue -o $@ $(ISODIR)
 	rm -rf $(ISODIR)
 
 -include $(DEPENDS)
