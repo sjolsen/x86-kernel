@@ -81,10 +81,10 @@ void install_GDT (GDT* gdt, uint16_t entries);
 static inline
 void reload_segments (uint16_t code_selector, uint16_t data_selector)
 {
-	uint32_t code = code_selector * sizeof (GDT_entry);
+	uint16_t code = code_selector * sizeof (GDT_entry);
 	uint32_t data = data_selector * sizeof (GDT_entry);
 	__asm__ (
-		"pushl %0\n"
+		"pushw %0\n"
 		"pushl $reload_CS\n"
 		"lret\n"
 	"reload_CS:"
