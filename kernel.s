@@ -17,11 +17,11 @@ _start:
 	movl $_stack_top, %ebp
 
 	# Save the arguments supplied by the bootloader and set up long mode.
-	pushl %eax
 	pushl %ebx
+	pushl %eax
 	call init
-        popl %ebx
         popl %eax
+        popl %ebx
 
         # Go to long mode
         ljmpl $(3 << 3), $_longmode_trampoline
@@ -29,7 +29,7 @@ _start:
 _longmode_trampoline:
 	.code64
 
-        movl %eax, %edi
-        movl %ebx, %esi
+        movl %ebx, %edi
+        movl %eax, %esi
         movabsq $kernel_main, %rax
         jmp *%rax

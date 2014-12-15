@@ -1,3 +1,4 @@
+#include "multiboot/multiboot.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -12,7 +13,8 @@ void halt (void)
 		);
 }
 
-void kernel_main (void)
+void kernel_main (multiboot_info_t* info,
+                  multiboot_uint32_t magic)
 {
 	uint64_t tmp = 0;
 	__asm__ volatile (
