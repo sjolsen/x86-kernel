@@ -68,18 +68,8 @@ void IDT_initialize (IDT* idt)
 	(*idt) [0x11] = make_IDT_entry (&_ISR_11);
 	(*idt) [0x12] = make_IDT_entry (&_ISR_12);
 	(*idt) [0x13] = make_IDT_entry (&_ISR_13);
-	(*idt) [0x14] = make_IDT_entry (&_ISR_14);
-	(*idt) [0x15] = make_IDT_entry (&_ISR_15);
-	(*idt) [0x16] = make_IDT_entry (&_ISR_16);
-	(*idt) [0x17] = make_IDT_entry (&_ISR_17);
-	(*idt) [0x18] = make_IDT_entry (&_ISR_18);
-	(*idt) [0x19] = make_IDT_entry (&_ISR_19);
-	(*idt) [0x1A] = make_IDT_entry (&_ISR_1A);
-	(*idt) [0x1B] = make_IDT_entry (&_ISR_1B);
-	(*idt) [0x1C] = make_IDT_entry (&_ISR_1C);
-	(*idt) [0x1D] = make_IDT_entry (&_ISR_1D);
-	(*idt) [0x1E] = make_IDT_entry (&_ISR_1E);
-	(*idt) [0x1F] = make_IDT_entry (&_ISR_1F);
+	for (uint8_t i = 0x14; i <= 0x1F; ++i)
+		(*idt) [i] = (IDT_entry) {.present = 0};
 	(*idt) [0x20] = make_IDT_entry (&_ISR_20);
 	(*idt) [0x21] = make_IDT_entry (&_ISR_21);
 	(*idt) [0x22] = make_IDT_entry (&_ISR_22);

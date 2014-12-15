@@ -2,21 +2,6 @@
 
 # Declare an interrupt handler delegating to C
 _ISR_entry:
-	call ISR_entry
-	popq %rdi
-        popq %r11
-        popq %r10
-        popq %r9
-        popq %r8
-        popq %rdx
-        popq %rcx
-        popq %rax
-	iretq
-
-	.macro .isr number name
-	.global \name
-	.type \name, @function
-\name:
         pushq %rax
         pushq %rcx
         pushq %rdx
@@ -24,6 +9,21 @@ _ISR_entry:
         pushq %r9
         pushq %r10
         pushq %r11
+	call ISR_entry
+        popq %r11
+        popq %r10
+        popq %r9
+        popq %r8
+        popq %rdx
+        popq %rcx
+        popq %rax
+	popq %rdi
+	iretq
+
+	.macro .isr number name
+	.global \name
+	.type \name, @function
+\name:
         pushq %rdi
         movabsq \number, %rdi
         jmp _ISR_entry
@@ -50,18 +50,7 @@ _ISR_entry:
 	.isr $0x11 _ISR_11
 	.isr $0x12 _ISR_12
 	.isr $0x13 _ISR_13
-	.isr $0x14 _ISR_14
-	.isr $0x15 _ISR_15
-	.isr $0x16 _ISR_16
-	.isr $0x17 _ISR_17
-	.isr $0x18 _ISR_18
-	.isr $0x19 _ISR_19
-	.isr $0x1A _ISR_1A
-	.isr $0x1B _ISR_1B
-	.isr $0x1C _ISR_1C
-	.isr $0x1D _ISR_1D
-	.isr $0x1E _ISR_1E
-	.isr $0x1F _ISR_1F
+
 	.isr $0x20 _ISR_20
 	.isr $0x21 _ISR_21
 	.isr $0x22 _ISR_22
