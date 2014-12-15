@@ -8,21 +8,34 @@ _stack_top:
 
 # The linker script specifies _start as the entry point to the kernel and the
 # bootloader will jump to this position once the kernel has been loaded.
-.section .text
+.section .text32
+        .code32
 	.global _start
-	.type _start, @function
 _start:
 	# Initialize the stack.
 	movl $_stack_top, %esp
+	movl $_stack_top, %ebp
 
-	# Call the C entry point with the arguments supplied by the bootloader.
+	# Save the arguments supplied by the bootloader and set up long mode.
 	pushl %eax
 	pushl %ebx
-	call kernel_main
+	call init
+        popl %ebx
+        popl %eax
 
-	# Hang indefinitely.
+        # Go to long mode
+        ljmpl $(3 << 3), $_longmode_trampoline
+
+_longmode_trampoline:
+	.code64
+
+        movl %eax, %edi
+        movl %ebx, %esi
+        movabsq $kernel_main, %rax
+        call *%rax
+
+       	# Hang indefinitely.
 	cli
-	.Lhang:
+.Lhang:
 	hlt
 	jmp .Lhang
-	.size _start, . - _start

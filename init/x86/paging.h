@@ -58,7 +58,7 @@ typedef union {
 	struct {
 		uint64_t           : 7;
 		uint64_t page_size : 1;
-		uint64_t           : 58;
+		uint64_t           : 54;
 	};
 	PDPTE_direct   direct;
 	PDPTE_indirect indirect;
@@ -101,7 +101,7 @@ typedef union {
 	struct {
 		uint64_t           : 7;
 		uint64_t page_size : 1;
-		uint64_t           : 58;
+		uint64_t           : 56;
 	};
 	PDE_direct   direct;
 	PDE_indirect indirect;
@@ -118,7 +118,7 @@ typedef struct {
 	uint64_t PAT             : 1;
 	uint64_t global          : 1;
 	uint64_t                 : 3;
-	uint64_t PT_address      : 40; // Maps a 4 kiB page
+	uint64_t page_address    : 40; // Maps a 4 kiB page
 	uint64_t                 : 11;
 	uint64_t execute_disable : 1;
 } PTE;
@@ -127,5 +127,14 @@ typedef __attribute__ ((aligned (0x1000))) PML4E PML4_table [512];
 typedef __attribute__ ((aligned (0x1000))) PDPTE PDP_table [512];
 typedef __attribute__ ((aligned (0x1000))) PDE Page_directory [512];
 typedef __attribute__ ((aligned (0x1000))) PTE Page_table [512];
+
+_Static_assert (sizeof (PML4E)          == 8, "PML4E not sized correctly");
+_Static_assert (sizeof (PDPTE_direct)   == 8, "PDPTE_direct not sized correctly");
+_Static_assert (sizeof (PDPTE_indirect) == 8, "PDPTE_indirect not sized correctly");
+_Static_assert (sizeof (PDPTE)          == 8, "PDPTE not sized correctly");
+_Static_assert (sizeof (PDE_direct)     == 8, "PDE_direct not sized correctly");
+_Static_assert (sizeof (PDE_indirect)   == 8, "PDE_indirect not sized correctly");
+_Static_assert (sizeof (PDE)            == 8, "PDE not sized correctly");
+_Static_assert (sizeof (PTE)            == 8, "PTE not sized correctly");
 
 #endif
