@@ -1,6 +1,9 @@
 #include "x86/GDT.h"
 #include "x86/paging.h"
+#include "vga/tinyvga.h"
 #include <stdbool.h>
+
+static tinyvga vga;
 
 static GDT gdt;
 static TSS_64 tss;
@@ -8,6 +11,86 @@ static PML4_table pml4_table;
 static PDP_table pdp_table;
 static Page_directory page_directory;
 static Page_directory high_page_directory;
+
+typedef struct {
+	uint16_t pml4;
+	uint16_t pdp;
+	uint16_t pd;
+	uint16_t pt;
+	uint16_t p;
+} page_indices;
+
+static inline
+uint64_t log2linaddr (uint64_t logaddr, bool* found, page_indices* indices)
+{
+	*found = false;
+
+	// Check for canonical addresses
+	uint64_t highbits = logaddr & 0xFFFF800000000000;
+	if ((highbits != 0x0000000000000000) &&
+	    (highbits != 0xFFFF800000000000))
+		return 0;
+	logaddr &= 0x0000FFFFFFFFFFFF;
+
+	// Grab paging indices
+	page_indices i = {
+		.pml4 = logaddr >> 39 & 0x01FFFF,
+		.pdp  = logaddr >> 30 & 0x01FFFF,
+		.pd   = logaddr >> 21 & 0x01FFFF,
+		.pt   = logaddr >> 12 & 0x01FFFF
+	};
+	*indices = i;
+
+	// Translate
+	if (!pml4_table [i.pml4].present)
+		return 0;
+
+	const PDP_table* pdpt = (const PDP_table*) (uint32_t) (pml4_table [i.pml4].PDPT_address << 12);
+	if (!(*pdpt) [i.pdp].present)
+		return 0;
+	if ((*pdpt) [i.pdp].page_size == 1) {
+		*found = true;
+		return ((*pdpt) [i.pdp].direct.page_address << 30) | (logaddr & 0x3FFFFFFF);
+	}
+
+	const Page_directory* pd = (const Page_directory*) (uint32_t) ((*pdpt) [i.pdp].indirect.PD_address << 12);
+	if (!(*pd) [i.pd].present)
+		return 0;
+	if ((*pd) [i.pd].page_size == 1) {
+		*found = true;
+		return ((*pd) [i.pd].direct.page_address << 21) | (logaddr & 0x0001FFFFF);
+	}
+
+	const Page_table* pt = (const Page_table*) (uint32_t) ((*pd) [i.pd].indirect.PT_address << 12);
+	if (!(*pt) [i.pt].present)
+		return 0;
+	*found = true;
+	return ((*pt) [i.pt].page_address << 12) | (logaddr & 0x00000FFF);
+}
+
+static
+void print_64 (uint64_t addr)
+{
+	char buffer [19] = "0x";
+	for (size_t i = 0; i < 16; ++i) {
+		char digit = "0123456789ABCDEF" [addr % 16];
+		addr /= 16;
+		buffer [17 - i] = digit;
+	}
+	vga_put (&vga, buffer);
+}
+
+static
+void print_16 (uint64_t addr)
+{
+	char buffer [7] = "0x";
+	for (size_t i = 0; i < 4; ++i) {
+		char digit = "0123456789ABCDEF" [addr % 16];
+		addr /= 16;
+		buffer [5 - i] = digit;
+	}
+	vga_put (&vga, buffer);
+}
 
 static inline
 bool capable_64 (void)
@@ -149,18 +232,63 @@ void enable_paging (void)
 	);
 }
 
-void init (void)
+void halt (void)
 {
-	if (!capable_64 ())
 		__asm__ volatile (
 			".halt:"
 			"cli;"
 			"hlt;"
 			"jmp .halt"
 		);
+}
+
+static
+void debug_addr (uint64_t addr)
+{
+	print_64 (addr);
+	vga_put (&vga, ": ");
+
+	bool found = false;
+	page_indices indices = {
+		.pml4 = 0,
+		.pdp  = 0,
+		.pd   = 0,
+		.pt   = 0
+	};
+	addr = log2linaddr (addr, &found, &indices);
+
+	if (found)
+		print_64 (addr);
+	else {
+		vga_put (&vga, "not found (");
+		print_16 (indices.pml4);
+		vga_putchar (&vga, ' ');
+		print_16 (indices.pdp);
+		vga_putchar (&vga, ' ');
+		print_16 (indices.pd);
+		vga_putchar (&vga, ' ');
+		print_16 (indices.pt);
+		vga_putchar (&vga, ' ');
+		print_16 (indices.p);
+		vga_putline (&vga, ")");
+	}
+
+	vga_putchar (&vga, '\n');
+}
+
+void init (void)
+{
+	if (!capable_64 ())
+		halt ();
 
 	GDT_initialize (&gdt, &tss);
 	paging_initialize ();
+
+	vga = vga_initialize ();
+	debug_addr (0x0000000000100000);
+	debug_addr (0xFFFF800000000000);
+	halt ();
+
 	enable_PAE ();
 	load_PML4 (&pml4_table);
 	enable_LM ();
