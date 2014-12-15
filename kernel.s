@@ -24,18 +24,14 @@ _start:
         popl %eax
 
         # Go to long mode
-	pushl $(3 << 3)
-	pushl $_longmode_start
-        lret
-
-.section .text
         .code64
-        .global _longmode_start
-_longmode_start:
-        # Do longmode stuff.
         movl %eax, %edi
         movl %ebx, %esi
-	call kernel_main
+	movw $(3 << 3), %ax
+        pushw %ax
+	movabsq $kernel_main, %rax
+        pushq %rax
+	lretq
 
 	# Hang indefinitely.
 	cli

@@ -38,12 +38,13 @@ SECTIONS
 	}
 
         _ktext_base = 2M;
-        .text 0x40000000 : AT(_ktext_base)
+        .text 0xFFFF800000000000 : AT(_ktext_base)
         {
                 _ktext_start = .;
                 *(.text)
                 _ktext_end = .;
         }
+        _ktext_size = _ktext_end - _ktext_start;
 
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */

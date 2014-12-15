@@ -22,12 +22,12 @@ bool capable_64 (void)
 }
 
 extern const void _ktext_base;
-extern const void _ktext_start;
-extern const void _ktext_end;
+extern const void _ktext_size;
 
-static inline
+static __attribute__ ((noinline))
 void paging_initialize (void)
 {
+	__asm__ volatile ("movl %0, %%eax" :: "r" (&_ktext_size));
 	pml4_table [0] = (PML4E) {
 		.present         = 1,
 		.writable        = 1,
@@ -70,8 +70,8 @@ void paging_initialize (void)
 			.execute_disable = 0
 		}
 	};
-	// Map the 64-bit code at 0x40000000
-	pdp_table [1] = (PDPTE) {
+	// Map the 64-bit code at 0xFFFF800000000000
+	pdp_table [256] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
 			.writable        = 1,
@@ -84,7 +84,7 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	for (int32_t i = 0; i < ((&_ktext_end - &_ktext_start + 0x001FFFFF) >> 21); ++i)
+	for (uint32_t i = 0; i < (uint32_t) &_ktext_size; i += 0x200000)
 		high_page_directory [i] = (PDE) {
 			.direct = {
 				.present         = 1,
@@ -98,7 +98,7 @@ void paging_initialize (void)
 				.global          = 1,
 				.PAT             = 0,
 				.reserved        = 0,
-				.page_address    = ((uint32_t) &_ktext_base >> 21) + i,
+				.page_address    = ((uint32_t) &_ktext_base + i) >> 21,
 				.execute_disable = 0
 			}
 		};
