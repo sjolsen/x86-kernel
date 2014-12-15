@@ -9,6 +9,7 @@ static GDT gdt;
 static TSS_64 tss;
 static PML4_table pml4_table;
 static PDP_table pdp_table;
+static PDP_table high_pdp_table;
 static Page_directory page_directory;
 static Page_directory high_page_directory;
 
@@ -145,7 +146,7 @@ extern const void _ktext_size;
 static __attribute__ ((noinline))
 void paging_initialize (void)
 {
-	__asm__ volatile ("movl %0, %%eax" :: "r" (&_ktext_size));
+	// Identity-map most of the kernel
 	pml4_table [0] = (PML4E) {
 		.present         = 1,
 		.writable        = 1,
@@ -157,7 +158,6 @@ void paging_initialize (void)
 		.PDPT_address    = (uint32_t) &pdp_table >> 12,
 		.execute_disable = 0
 	};
-	// Identity-map most of the kernel
 	pdp_table [0] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
@@ -189,7 +189,18 @@ void paging_initialize (void)
 		}
 	};
 	// Map the 64-bit code at 0xFFFF800000000000
-	pdp_table [256] = (PDPTE) {
+	pml4_table [256] = (PML4E) {
+		.present         = 1,
+		.writable        = 1,
+		.user            = 0,
+		.write_through   = 0,
+		.cache_disable   = 0,
+		.accessed        = 0,
+		.reserved        = 0, // Must be 0
+		.PDPT_address    = (uint32_t) &high_pdp_table >> 12,
+		.execute_disable = 0
+	};
+	high_pdp_table [0] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
 			.writable        = 1,
