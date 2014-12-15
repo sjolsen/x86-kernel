@@ -29,10 +29,10 @@ init.o: init.ld $(OBJECTS)
 $(OBJECTS): Makefile
 
 %.c.d: %.c
-	$(CC) -I. -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
+	$(CC) -I. -I.. -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
 
 %.c.o: %.c
-	$(CC) $(C32FLAGS) -c -o $@ $<
+	$(CC) $(C32FLAGS) -I.. -c -o $@ $<
 
 %.s.o: %.s
 	$(AS) $(AS32FLAGS) -o $@ $<

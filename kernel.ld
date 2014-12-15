@@ -21,6 +21,10 @@ SECTIONS
 	.rodata :
 	{
 		*(.rodata*)
+                _ktext_base = .;
+                LONG(_ktext_base)
+                _ktext_size = .;
+                QUAD(_ktext_end - _ktext_start)
 	}
 
 	/* Read-write data (initialized) */
@@ -44,7 +48,6 @@ SECTIONS
                 *(.text)
                 _ktext_end = .;
         }
-        _ktext_size = _ktext_end - _ktext_start;
 
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */

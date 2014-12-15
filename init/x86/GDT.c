@@ -104,8 +104,6 @@ void install_TSS (uint16_t selector)
 	__asm__ ("ltr %0" :: "r" (selector));
 }
 
-extern const void _ktext_base;
-
 
 // Extern functions
 

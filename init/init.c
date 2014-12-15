@@ -1,3 +1,4 @@
+#include "kernel.h"
 #include "x86/GDT.h"
 #include "x86/paging.h"
 #include <stdbool.h>
@@ -21,9 +22,6 @@ bool capable_64 (void)
 	);
 	return tmp & (1 << 29);
 }
-
-extern const void _ktext_base;
-extern const void _ktext_size;
 
 static __attribute__ ((noinline))
 void paging_initialize (void)
@@ -95,7 +93,7 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	for (uint32_t i = 0; i < (uint32_t) &_ktext_size; i += 0x200000)
+	for (uint32_t i = 0; i < _ktext_size; i += 0x200000)
 		high_page_directory [i] = (PDE) {
 			.direct = {
 				.present         = 1,
