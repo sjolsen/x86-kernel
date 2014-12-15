@@ -32,10 +32,4 @@ _longmode_trampoline:
         movl %eax, %edi
         movl %ebx, %esi
         movabsq $kernel_main, %rax
-        call *%rax
-
-       	# Hang indefinitely.
-	cli
-.Lhang:
-	hlt
-	jmp .Lhang
+        jmp *%rax

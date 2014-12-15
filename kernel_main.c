@@ -1,6 +1,17 @@
 #include <stdint.h>
 #include <stddef.h>
 
+static
+void halt (void)
+{
+		__asm__ volatile (
+		".halt:"
+			"cli;"
+			"hlt;"
+			"jmp .halt"
+		);
+}
+
 void kernel_main (void)
 {
 	uint64_t tmp = 0;
@@ -12,4 +23,5 @@ void kernel_main (void)
 		: "+r" (tmp)
 		: "r" (0xB8000)
 	);
+	halt ();
 }

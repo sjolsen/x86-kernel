@@ -162,7 +162,7 @@ static
 void halt (void)
 {
 		__asm__ volatile (
-			".halt:"
+		".halt:"
 			"cli;"
 			"hlt;"
 			"jmp .halt"
