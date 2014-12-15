@@ -24,6 +24,7 @@ void vga_advance_line (tinyvga* vga)
 			*dst++ = *src++;
 		while (dst != src_end)
 			*dst++ = make_vga_entry (' ', vga->current_color).value;
+		vga->current_row = VGA_HEIGHT - 1;
 	}
 }
 
