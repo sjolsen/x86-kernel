@@ -30,6 +30,7 @@ clean:
 
 kernel.bin: kernel.ld $(OBJECTS) init/init.o
 	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
+	objcopy -O elf32-i386 $@
 
 kernel.iso: kernel.bin
 	$(eval ISODIR := $(shell mktemp -d))
@@ -38,7 +39,7 @@ kernel.iso: kernel.bin
 	cp $< $(ISODIR)/boot/
 	mkdir -p $(ISODIR)/boot/grub
 	echo 'menuentry "'"$(OSNAME)"'" {\n multiboot /boot/'"$<"'\n}' > $(ISODIR)/boot/grub/grub.cfg
-	pc-grub-mkrescue -o $@ $(ISODIR)
+	$(GRUB_MKRESCUE) -o $@ $(ISODIR)
 	rm -rf $(ISODIR)
 
 -include $(DEPENDS)

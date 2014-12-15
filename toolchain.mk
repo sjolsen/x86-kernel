@@ -11,3 +11,5 @@ LD = ld
 override LDFLAGS:=$(LDFLAGS) -nostdlib
 override LD32FLAGS:=$(LDFLAGS) $(LD32FLAGS) -march=i686 -melf_i386
 override LD64FLAGS:=$(LDFLAGS) $(LD64FLAGS)
+
+GRUB_MKRESCUE = grub-mkrescue

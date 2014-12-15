@@ -19,6 +19,7 @@ void kernel_main (multiboot_info_t* info,
                   multiboot_uint32_t magic)
 {
 	tinyvga vga = vga_initialize ();
+	vga_clear (&vga);
 	vga_putline (&vga, "Success.");
 
 	char buffer [17];
