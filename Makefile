@@ -17,6 +17,13 @@ OBJECTS := $(COBJECTS) $(ASMOBJECTS)
 
 .PHONY: all depends test test-grub clean cleanall
 
+kernel.bin32: kernel.bin64
+	cp $< $@
+	objcopy -O elf32-i386 $@
+
+kernel.bin64: kernel.ld $(OBJECTS) init/init.o
+	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
+
 all: kernel.iso kernel.bin64 kernel.bin32
 depends: $(DEPENDS)
 
@@ -29,13 +36,6 @@ clean:
 	find '(' -name '*.d' -or -name '*.o' ')' -exec rm '{}' ';'
 cleanall: clean
 	rm -f kernel.iso kernel.bin32 kernel.bin64
-
-kernel.bin64: kernel.ld $(OBJECTS) init/init.o
-	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
-
-kernel.bin32: kernel.bin64
-	cp $< $@
-	objcopy -O elf32-i386 $@
 
 kernel.iso: kernel.bin64
 	$(eval ISODIR := $(shell mktemp -d))
