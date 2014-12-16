@@ -26,7 +26,7 @@ bool capable_64 (void)
 static __attribute__ ((noinline))
 void paging_initialize (void)
 {
-	// Identity-map most of the kernel
+	// Identity-map kernel data and init code
 	pml4_table [0] = (PML4E) {
 		.present         = 1,
 		.writable        = 1,
@@ -51,23 +51,24 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	page_directory [0] = (PDE) {
-		.direct = {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.page_size       = 1, // Must be 1
-			.global          = 1,
-			.PAT             = 0,
-			.reserved        = 0,
-			.page_address    = (uint32_t) 0 >> 21,
-			.execute_disable = 0
-		}
-	};
+	for (uint32_t i = 0; i < ((kinit_size + 0x1FFFFF) >> 21); ++i)
+		page_directory [i] = (PDE) {
+			.direct = {
+				.present         = 1,
+				.writable        = 1,
+				.user            = 0,
+				.write_through   = 0,
+				.cache_disable   = 0,
+				.accessed        = 0,
+				.dirty           = 0,
+				.page_size       = 1, // Must be 1
+				.global          = 1,
+				.PAT             = 0,
+				.reserved        = 0,
+				.page_address    = i,
+				.execute_disable = 0
+			}
+		};
 	// Map the 64-bit code at 0xFFFF800000000000
 	pml4_table [256] = (PML4E) {
 		.present         = 1,
