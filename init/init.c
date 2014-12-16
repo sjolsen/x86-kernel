@@ -159,6 +159,18 @@ void enable_paging (void)
 	);
 }
 
+static inline
+void enable_global_pages (void)
+{
+	register uint32_t tmp = 0;
+	__asm__ volatile (
+		"mov %%cr4, %0;"
+		"or $(1<<7), %0;"
+		"mov %0, %%cr4"
+		: "+r" (tmp)
+	);
+}
+
 static
 void halt (void)
 {
@@ -181,4 +193,5 @@ void init (void)
 	load_PML4 (&pml4_table);
 	enable_LM ();
 	enable_paging ();
+	enable_global_pages ();
 }
