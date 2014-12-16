@@ -17,7 +17,7 @@ OBJECTS := $(COBJECTS) $(ASMOBJECTS)
 
 .PHONY: all depends test test-grub clean cleanall
 
-all: kernel.bin64 kernel.bin32
+all: kernel.iso kernel.bin64 kernel.bin32
 depends: $(DEPENDS)
 
 test: kernel.bin32
