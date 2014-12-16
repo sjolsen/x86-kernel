@@ -28,7 +28,7 @@ test-grub: kernel.iso
 clean:
 	find '(' -name '*.d' -or -name '*.o' ')' -exec rm '{}' ';'
 cleanall: clean
-	rm kernel.iso kernel.bin32 kernel.bin64
+	rm -f kernel.iso kernel.bin32 kernel.bin64
 
 kernel.bin64: kernel.ld $(OBJECTS) init/init.o
 	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
