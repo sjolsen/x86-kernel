@@ -1,4 +1,5 @@
 #include "format.h"
+#include <stddef.h>
 
 static inline
 char digit_to_ascii (uint_fast8_t digit)
@@ -25,8 +26,39 @@ void creverse (char* begin, char* end)
 	}
 }
 
+static inline
+size_t fmt_strlen (const char* str)
+{
+	size_t len = 0;
+	while (str [len] != '\0')
+		++len;
+	return len;
+}
+
 
 // Extern functions
+
+char* numsep (char* bufstr, char sep)
+{
+	size_t n = fmt_strlen (bufstr);
+	size_t m = n + (n - 1)/3;
+	char* src = bufstr + n - 1;
+	char* dst = bufstr + m - 1;
+	for (int i = 0; src != dst;) {
+		if (i == 3) {
+			i = 0;
+			*dst = sep;
+		}
+		else {
+			i = i + 1;
+			*dst = *src;
+			--src;
+		}
+		--dst;
+	}
+	bufstr [m] = '\0';
+	return bufstr;
+}
 
 char* format_int (char* buffer, int64_t value, uint_fast8_t mincol, uint_fast8_t base)
 {
