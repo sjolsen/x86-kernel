@@ -91,6 +91,28 @@ void halt (void)
 		);
 }
 
+static
+void wait (void)
+{
+		__asm__ volatile (
+			"sti;"
+		".wait:"
+			"hlt;"
+			"jmp .wait"
+		);
+}
+
+static
+void halt_ISR (INT_index interrupt)
+{
+	char buffer [3];
+	vga_put (&vga, "System halt: interrupt 0x");
+	vga_putline (&vga, format_uint (buffer, interrupt, 2, 16));
+	halt ();
+}
+
+#include "kernel.h"
+
 void kernel_main (multiboot_info_t* info,
                   __attribute__ ((unused)) multiboot_uint32_t magic)
 {
@@ -98,11 +120,11 @@ void kernel_main (multiboot_info_t* info,
 	vga_clear (&vga);
 	vga_putline (&vga, "Success.");
 
-	ISR_table_initialize (&isrt, &null_ISR);
+	ISR_table_initialize (&isrt, &halt_ISR);
 	IDT_initialize (&idt);
 	IRQ_disable (IRQ_PIT);
 
 	print_multiboot_memmap (info);
 
-	halt ();
+	wait ();
 }
