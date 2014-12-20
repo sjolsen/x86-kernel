@@ -23,7 +23,7 @@ bool capable_64 (void)
 	return tmp & (1 << 29);
 }
 
-static __attribute__ ((noinline))
+static
 void paging_initialize (void)
 {
 	// Identity-map kernel data and init code
