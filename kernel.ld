@@ -3,21 +3,12 @@ ENTRY(_start)
 SECTIONS
 {
         . = 1M;
-        .text32 : ALIGN(4k)
-        {
-                _ktext32_start = .;
-
-                KEEP(*(.multiboot))
-                *(.multiboot)
-                *(.text32)
-
-                _ktext32_end = .;
-        }
-
         .rodata : ALIGN(4k)
         {
                 _krodata_start = .;
 
+                KEEP(*(.multiboot))
+                *(.multiboot)
                 *(.rodata*)
 
                 ktext32_base = .;
@@ -46,6 +37,13 @@ SECTIONS
                 LONG(_ktext_end - _ktext_start)
 
                 _krodata_end = .;
+        }
+
+        .text32 : ALIGN(4k)
+        {
+                _ktext32_start = .;
+                *(.text32)
+                _ktext32_end = .;
         }
 
         .data : ALIGN(4k)
