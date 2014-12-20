@@ -28,7 +28,7 @@ IDT_entry make_IDT_entry (void (*address) (void))
 			};
 }
 
-static __attribute__ ((noinline))
+static
 void install_IDT (IDT* idt)
 {
 	struct __attribute__ ((packed)) {
