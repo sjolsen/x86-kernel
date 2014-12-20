@@ -17,15 +17,15 @@ IDT_entry make_IDT_entry (void (*address) (void))
 
 	return (IDT_entry) {
 		.address_low   = (uintptr_t) address & 0xFFFF,
-			.selector      = KERNEL_TEXT_SELECTOR << 3,
-			.zero0         = 0,
-			.type          = T_INTR_GATE,
-			.zero1         = 0,
-			.privilege     = 0,
-			.present       = 1,
-			.address_high0 = ((uintptr_t) address >> 16) & 0xFFFF,
-			.address_high1 = ((uintptr_t) address >> 32) & 0xFFFFFFFF
-			};
+		.selector      = KERNEL_TEXT_SELECTOR << 3,
+		.zero0         = 0,
+		.type          = T_INTR_GATE,
+		.zero1         = 0,
+		.privilege     = 0,
+		.present       = 1,
+		.address_high0 = ((uintptr_t) address >> 16) & 0xFFFF,
+		.address_high1 = ((uintptr_t) address >> 32) & 0xFFFFFFFF
+	};
 }
 
 static
