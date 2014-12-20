@@ -30,7 +30,7 @@ void paging_initialize (void)
 	// Identity-map kernel data and init code
 	pml4_table [0] = (PML4E) {
 		.present         = 1,
-		.writable        = 0,
+		.writable        = 1,
 		.user            = 0,
 		.write_through   = 0,
 		.cache_disable   = 0,
@@ -42,7 +42,7 @@ void paging_initialize (void)
 	pdp_table [0] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
-			.writable        = 0,
+			.writable        = 1,
 			.user            = 0,
 			.write_through   = 0,
 			.cache_disable   = 0,
@@ -55,7 +55,7 @@ void paging_initialize (void)
 	page_directory [0] = (PDE) {
 		.indirect = {
 			.present         = 1,
-			.writable        = 0,
+			.writable        = 1,
 			.user            = 0,
 			.write_through   = 0,
 			.cache_disable   = 0,
@@ -240,6 +240,18 @@ void enable_paging (void)
 }
 
 static inline
+void enable_write_protection (void)
+{
+	register uint32_t tmp = 0;
+	__asm__ volatile (
+		"mov %%cr0, %0;"
+		"or $(1<<16), %0;"
+		"mov %0, %%cr0"
+		: "+r" (tmp)
+	);
+}
+
+static inline
 void enable_global_pages (void)
 {
 	register uint32_t tmp = 0;
@@ -274,5 +286,6 @@ void init (void)
 	enable_LM ();
 	enable_NXE ();
 	enable_paging ();
+	enable_write_protection ();
 	enable_global_pages ();
 }
