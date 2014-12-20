@@ -16,6 +16,6 @@ extern const uint32_t kbss_base;
 extern const uint32_t kbss_size;
 
 extern const uint32_t ktext_base;
-extern const uint64_t ktext_size;
+extern const uint32_t ktext_size;
 
 #endif

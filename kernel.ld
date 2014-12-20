@@ -43,7 +43,7 @@ SECTIONS
                 ktext_base = .;
                 LONG(_ktext_base)
                 ktext_size = .;
-                QUAD(_ktext_end - _ktext_start)
+                LONG(_ktext_end - _ktext_start)
 
                 _krodata_end = .;
         }
