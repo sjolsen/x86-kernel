@@ -2,40 +2,69 @@ ENTRY(_start)
 
 SECTIONS
 {
-        _kinit_start = 0;
-	. = 1M;
-	.text32 :
-	{
-		KEEP(*(.multiboot))
-		*(.multiboot)
-		*(.text32)
-	}
+        . = 1M;
+        .text32 : ALIGN(4k)
+        {
+                _ktext32_start = .;
 
-	.rodata :
-	{
-		*(.rodata*)
+                KEEP(*(.multiboot))
+                *(.multiboot)
+                *(.text32)
 
-                kinit_size = .;
-                LONG(_kinit_end - _kinit_start)
+                _ktext32_end = .;
+        }
+
+        .rodata : ALIGN(4k)
+        {
+                _krodata_start = .;
+
+                *(.rodata*)
+
+                ktext32_base = .;
+                LONG(_ktext32_start)
+                ktext32_size = .;
+                LONG(_ktext32_end - _ktext32_start)
+
+                krodata_base = .;
+                LONG(_krodata_start)
+                krodata_size = .;
+                LONG(_krodata_end - _krodata_start)
+
+                kdata_base = .;
+                LONG(_kdata_start)
+                kdata_size = .;
+                LONG(_kdata_end - _kdata_start)
+
+                kbss_base = .;
+                LONG(_kbss_start)
+                kbss_size = .;
+                LONG(_kbss_end - _kbss_start)
 
                 ktext_base = .;
                 LONG(_ktext_base)
                 ktext_size = .;
                 QUAD(_ktext_end - _ktext_start)
-	}
 
-	.data :
-	{
-		*(.data)
-	}
+                _krodata_end = .;
+        }
 
-	.bss :
-	{
-		*(COMMON)
-		*(.bss)
-		*(.bootstrap_stack)
-	}
-        _kinit_end = .;
+        .data : ALIGN(4k)
+        {
+                _kdata_start = .;
+                *(.data)
+                _kdata_end = .;
+        }
+
+        .bss : ALIGN(4k)
+        {
+                _kbss_start = .;
+
+                *(COMMON)
+                *(.bss)
+                *(.bootstrap_stack)
+
+                _kbss_end = .;
+        }
 
         _ktext_base = ALIGN(2M);
         .text 0xFFFF800000000000 : AT(_ktext_base)
@@ -45,11 +74,11 @@ SECTIONS
                 _ktext_end = .;
         }
 
-	/* Discard unneeded sections */
-	/DISCARD/ :
-	{
-		*(.eh_frame)
-		*(.note)
-		*(.comment)
-	}
+        /* Discard unneeded sections */
+        /DISCARD/ :
+        {
+                *(.eh_frame)
+                *(.note)
+                *(.comment)
+        }
 }

@@ -9,6 +9,7 @@ static PML4_table pml4_table;
 static PDP_table pdp_table;
 static PDP_table high_pdp_table;
 static Page_directory page_directory;
+static Page_table page_table;
 static Page_directory high_page_directory;
 
 static inline
@@ -29,7 +30,7 @@ void paging_initialize (void)
 	// Identity-map kernel data and init code
 	pml4_table [0] = (PML4E) {
 		.present         = 1,
-		.writable        = 1,
+		.writable        = 0,
 		.user            = 0,
 		.write_through   = 0,
 		.cache_disable   = 0,
@@ -41,7 +42,7 @@ void paging_initialize (void)
 	pdp_table [0] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
-			.writable        = 1,
+			.writable        = 0,
 			.user            = 0,
 			.write_through   = 0,
 			.cache_disable   = 0,
@@ -51,28 +52,96 @@ void paging_initialize (void)
 			.execute_disable = 0,
 		}
 	};
-	for (uint32_t i = 0; i < ((kinit_size + 0x1FFFFF) >> 21); ++i)
-		page_directory [i] = (PDE) {
-			.direct = {
-				.present         = 1,
-				.writable        = 1,
-				.user            = 0,
-				.write_through   = 0,
-				.cache_disable   = 0,
-				.accessed        = 0,
-				.dirty           = 0,
-				.page_size       = 1, // Must be 1
-				.global          = 1,
-				.PAT             = 0,
-				.reserved        = 0,
-				.page_address    = i,
-				.execute_disable = 0
-			}
+	page_directory [0] = (PDE) {
+		.indirect = {
+			.present         = 1,
+			.writable        = 0,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.page_size       = 0, // Must be 0
+			.PT_address      = (uint32_t) &page_table >> 12,
+			.execute_disable = 0,
+		}
+	};
+	for (uint32_t i = ktext32_base >> 12; i < ((ktext32_size + ktext32_base + (1<<12)-1) >> 12); ++i)
+		page_table [i] = (PTE) {
+			.present         = 1,
+			.writable        = 0,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.PAT             = 0,
+			.global          = 1,
+			.page_address    = i,
+			.execute_disable = 0
 		};
+	for (uint32_t i = krodata_base >> 12; i < ((krodata_size + krodata_base + (1<<12)-1) >> 12); ++i)
+		page_table [i] = (PTE) {
+			.present         = 1,
+			.writable        = 0,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.PAT             = 0,
+			.global          = 1,
+			.page_address    = i,
+			.execute_disable = 1
+		};
+	for (uint32_t i = kdata_base >> 12; i < ((kdata_size + kdata_base + (1<<12)-1) >> 12); ++i)
+		page_table [i] = (PTE) {
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.PAT             = 0,
+			.global          = 1,
+			.page_address    = i,
+			.execute_disable = 1
+		};
+	for (uint32_t i = kbss_base >> 12; i < ((kbss_size + kbss_base + (1<<12)-1) >> 12); ++i)
+		page_table [i] = (PTE) {
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.PAT             = 0,
+			.global          = 1,
+			.page_address    = i,
+			.execute_disable = 1
+		};
+
+	// Identity-map low stuff
+	for (uint32_t i = 0; i < ktext32_base >> 12; ++i)
+		page_table [i] = (PTE) {
+			.present         = 1,
+			.writable        = 1,
+			.user            = 0,
+			.write_through   = 0,
+			.cache_disable   = 0,
+			.accessed        = 0,
+			.dirty           = 0,
+			.PAT             = 0,
+			.global          = 1,
+			.page_address    = i,
+			.execute_disable = 1
+		};
+
 	// Map the 64-bit code at 0xFFFF800000000000
 	pml4_table [256] = (PML4E) {
 		.present         = 1,
-		.writable        = 1,
+		.writable        = 0,
 		.user            = 0,
 		.write_through   = 0,
 		.cache_disable   = 0,
@@ -84,7 +153,7 @@ void paging_initialize (void)
 	high_pdp_table [0] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
-			.writable        = 1,
+			.writable        = 0,
 			.user            = 0,
 			.write_through   = 0,
 			.cache_disable   = 0,
@@ -98,7 +167,7 @@ void paging_initialize (void)
 		high_page_directory [i] = (PDE) {
 			.direct = {
 				.present         = 1,
-				.writable        = 1,
+				.writable        = 0,
 				.user            = 0,
 				.write_through   = 0,
 				.cache_disable   = 0,
@@ -148,6 +217,17 @@ void enable_LM (void)
 }
 
 static inline
+void enable_NXE (void)
+{
+	__asm__ volatile (
+		"mov $0xC0000080, %ecx;" // EFER MSR
+		"rdmsr;"
+		"or $(1<<11), %eax;"
+		"wrmsr"
+	);
+}
+
+static inline
 void enable_paging (void)
 {
 	register uint32_t tmp = 0;
@@ -192,6 +272,7 @@ void init (void)
 	enable_PAE ();
 	load_PML4 (&pml4_table);
 	enable_LM ();
+	enable_NXE ();
 	enable_paging ();
 	enable_global_pages ();
 }
