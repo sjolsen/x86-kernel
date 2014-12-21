@@ -80,7 +80,6 @@ void print_multiboot_memmap (const multiboot_info_t* info)
 
 
 
-static
 void halt (void)
 {
 		__asm__ volatile (
@@ -92,7 +91,6 @@ void halt (void)
 		);
 }
 
-static
 void wait (void)
 {
 		__asm__ volatile (
