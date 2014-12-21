@@ -17,15 +17,23 @@ _ISR_entry:
         popq %rdx
         popq %rcx
         popq %rax
+        popq %rsi
 	popq %rdi
+        orq $0x0000000000000008, %rsp
 	iretq
 
 	.macro .isr number name
 	.global \name
 	.type \name, @function
 \name:
+        # Adjust for error code
+        movq $0, -8(%rsp)
+        andq $0xFFFFFFFFFFFFFFF0, %rsp
+        # Pass interrupt number and error code
         pushq %rdi
+        pushq %rsi
         movabsq \number, %rdi
+        movq 16(%rsp), %rsi
         jmp _ISR_entry
 	.endm
 

@@ -85,9 +85,10 @@ void halt (void)
 {
 		__asm__ volatile (
 			"cli;"
-		".halt:"
+		"halt%=:"
 			"hlt;"
-			"jmp .halt"
+			"jmp halt%="
+			:
 		);
 }
 
@@ -96,19 +97,24 @@ void wait (void)
 {
 		__asm__ volatile (
 			"sti;"
-		".wait:"
+		"wait%=:"
 			"hlt;"
-			"jmp .wait"
+			"jmp wait%="
+			:
 		);
 }
 
 static
-void halt_ISR (INT_index interrupt)
+void halt_ISR (INT_index interrupt, uint64_t error)
 {
-	char buffer [3];
-	vga_put (&vga, "System halt: interrupt 0x");
-	vga_putline (&vga, format_uint (buffer, interrupt, 2, 16));
-	halt ();
+	char buffer [5];
+	vga_put (&vga, "Interrupt: v=");
+	vga_put (&vga, format_uint (buffer, interrupt, 2, 16));
+	vga_put (&vga, " e=");
+	vga_putline (&vga, format_uint (buffer, error, 4, 16));
+
+	if (interrupt <= INT_SIMD_exception)
+		halt ();
 }
 
 #include "kernel.h"

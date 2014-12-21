@@ -7,12 +7,12 @@ ISR_table_t* ISR_table;
 
 // Extern functions
 
-void ISR_entry (uint32_t interrupt)
+void ISR_entry (uint32_t interrupt, uint64_t error)
 {
 	if (interrupt == INT_spurious && !IRQ_in_service (INT_LPT1))
 		return;
 
-	(*(*ISR_table) [interrupt]) (interrupt);
+	(*(*ISR_table) [interrupt]) (interrupt, error);
 
 	if (INT_IRQ_MBASE <= interrupt && interrupt < INT_IRQ_SBASE)
 		IRQ_EOI_master ();
@@ -20,7 +20,8 @@ void ISR_entry (uint32_t interrupt)
 		IRQ_EOI_slave ();
 }
 
-void null_ISR (__attribute__ ((unused)) INT_index interrupt)
+void null_ISR (__attribute__ ((unused)) INT_index interrupt,
+               __attribute__ ((unused)) uint64_t error)
 {
 }
 
