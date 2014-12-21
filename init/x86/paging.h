@@ -4,7 +4,9 @@
 #include <stdint.h>
 
 /// Note: all addresses are physical and must be zero-extended past
-/// the machine width.
+/// the machine width. Addresses are stored as though their
+/// least-significant bits are colocated with lower structure bits;
+/// thus, addresses are aligned as if these bits were zero.
 
 typedef struct {
 	uint64_t present         : 1;
