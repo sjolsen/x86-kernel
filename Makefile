@@ -72,7 +72,7 @@ $(ASMOBJECTS): $(BUILDDIR)/%.s.o: %.s
 
 ### Kernel images
 
-KERNELS := scanmem
+KERNELS := scanmem vbetest
 
 KIMAGES := $(foreach k,$(KERNELS),$(BUILDDIR)/$(k).elf)
 K64IMAGES := $(patsubst %.elf,%.64.elf,$(KIMAGES))
