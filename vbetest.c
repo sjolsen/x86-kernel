@@ -34,6 +34,27 @@ void wait (void)
 	);
 }
 
+
+
+void plot_pixel (ModeInfoBlock* mode_info,
+                 uint32_t x, uint32_t y,
+                 uint32_t R, uint32_t G, uint32_t B)
+{
+	uint8_t* base   = (uint8_t*)(uintptr_t) mode_info->PhysBasePtr;
+	uint16_t pitch  = mode_info->BytesPerScanLine;
+	uint16_t width  = mode_info->BitsPerPixel / 8;
+	uint32_t offset = y * pitch + x * width;
+
+	const uint32_t cdata =
+		(R & ((1 << mode_info->RedMaskSize)   - 1)) << mode_info->RedFieldPosition   |
+		(G & ((1 << mode_info->GreenMaskSize) - 1)) << mode_info->GreenFieldPosition |
+		(B & ((1 << mode_info->BlueMaskSize)  - 1)) << mode_info->BlueFieldPosition;
+	const uint8_t* cdata_raw = (const uint8_t*) &cdata;
+
+	for (uint8_t i = 0; i < width; ++i)
+		base [offset + i] = cdata_raw [i];
+}
+
 #include "kernel.h"
 
 void kernel_main (multiboot_info_t* info,
@@ -44,12 +65,9 @@ void kernel_main (multiboot_info_t* info,
 	IRQ_disable (IRQ_PIT);
 
 	ModeInfoBlock* mode_info = (ModeInfoBlock*)(uintptr_t) info->vbe_mode_info;
-	uint8_t* ptr = (uint8_t*)(uintptr_t) mode_info->PhysBasePtr;
-	for (int i = 0; i < 3*1024; i+=3) {
-		ptr[i+0] = 0xFF;
-		ptr[i+1] = 0xFF;
-		ptr[i+2] = 0x00;
-	}
+	for (int x = 0; x < mode_info->XResolution; ++x)
+		for (int y = 0; y < mode_info->YResolution; ++y)
+			plot_pixel (mode_info, x, y, (x * 0xFF) / mode_info->XResolution, (y * 0xFF) / mode_info->YResolution, 0xFF);
 
 	wait ();
 }
