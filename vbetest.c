@@ -42,7 +42,7 @@ void plot_pixel (ModeInfoBlock* mode_info,
 {
 	uint8_t* base   = (uint8_t*)(uintptr_t) mode_info->PhysBasePtr;
 	uint16_t pitch  = mode_info->BytesPerScanLine;
-	uint16_t width  = mode_info->BitsPerPixel / 8;
+	uint16_t width  = (mode_info->BitsPerPixel + 8 - 1) / 8;
 	uint32_t offset = y * pitch + x * width;
 
 	const uint32_t cdata =
@@ -65,9 +65,18 @@ void kernel_main (multiboot_info_t* info,
 	IRQ_disable (IRQ_PIT);
 
 	ModeInfoBlock* mode_info = (ModeInfoBlock*)(uintptr_t) info->vbe_mode_info;
-	for (int x = 0; x < mode_info->XResolution; ++x)
-		for (int y = 0; y < mode_info->YResolution; ++y)
-			plot_pixel (mode_info, x, y, (x * 0xFF) / mode_info->XResolution, (y * 0xFF) / mode_info->YResolution, 0xFF);
+
+	const uint32_t xres = mode_info->XResolution;
+	const uint32_t yres = mode_info->XResolution;
+	const uint32_t Rmax = (1 << mode_info->RedMaskSize)   - 1;
+	const uint32_t Gmax = (1 << mode_info->GreenMaskSize) - 1;
+	const uint32_t Bmax = (1 << mode_info->BlueMaskSize)  - 1;
+	for (uint32_t y = 0; y < yres; ++y)
+		for (uint32_t x = 0; x < xres; ++x)
+			plot_pixel (mode_info, x, y,
+			            (x * (Rmax+1)) / xres,
+			            (y * (Gmax+1)) / yres,
+			            Bmax);
 
 	wait ();
 }
@@ -85,7 +94,7 @@ const struct multiboot_header kernel_header = {
 	.bss_end_addr  = 0,
 	.entry_addr    = 0,
 	.mode_type     = 0,
-	.width         = 1024,
-	.height        = 768,
+	.width         = 1280,
+	.height        = 1024,
 	.depth         = 32,
 };
