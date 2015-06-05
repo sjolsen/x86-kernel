@@ -82,24 +82,24 @@ void print_multiboot_memmap (const multiboot_info_t* info)
 
 void halt (void)
 {
-		__asm__ volatile (
-			"cli;"
+	__asm__ volatile (
+		"cli;"
 		"halt%=:"
-			"hlt;"
-			"jmp halt%="
-			:
-		);
+		"hlt;"
+		"jmp halt%="
+		:
+	);
 }
 
 void wait (void)
 {
-		__asm__ volatile (
-			"sti;"
+	__asm__ volatile (
+		"sti;"
 		"wait%=:"
-			"hlt;"
-			"jmp wait%="
-			:
-		);
+		"hlt;"
+		"jmp wait%="
+		:
+	);
 }
 
 static
