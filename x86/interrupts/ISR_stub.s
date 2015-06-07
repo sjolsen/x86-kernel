@@ -1,5 +1,17 @@
 .section .text
 
+# In IA32e mode, the processor pre-aligns the stack frame and pointer to 16
+# bytes. It then unconditionally pushes 40 bytes onto the stack. If there is an
+# error code, it pushes that code, zero-extended to 8 bytes, onto the stack. We
+# can (and must) handle error codes uniformly by taking advantage of the stacks
+# alignment: first, we place a zeroed quadword below the stack pointer. Then, we
+# zero out the bottom four bits of the stack frame. If there was an error code,
+# it now occupies the lowest 8 bytes on the stack. Otherwise, those bytes are
+# occupied by the zeroed quadword placed earlier. Either way, the 40 bytes
+# pushed by the processor now begin at eight bytes above the stack pointer. We
+# proceed to call ISR_entry (C calling convention), then remove the bottom eight
+# bytes and perform the IRET.
+
 # Declare an interrupt handler delegating to C
 _ISR_entry:
         pushq %rax
@@ -19,7 +31,7 @@ _ISR_entry:
         popq %rax
         popq %rsi
 	popq %rdi
-        orq $0x0000000000000008, %rsp
+        addq 8, %rsp
 	iretq
 
 	.macro .isr number name
