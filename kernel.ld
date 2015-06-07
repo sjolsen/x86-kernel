@@ -3,6 +3,8 @@ ENTRY(_start)
 SECTIONS
 {
         . = 1M;
+        _kernel_start = .;
+
         .rodata : ALIGN(4k)
         {
                 _krodata_start = .;
@@ -35,6 +37,11 @@ SECTIONS
                 LONG(_ktext_base)
                 ktext_size = .;
                 LONG(_ktext_end - _ktext_start)
+
+                kernel_base = .;
+                LONG(_kernel_start)
+                kernel_size = .;
+                LONG(_kernel_end - _kernel_start)
 
                 _krodata_end = .;
         }
@@ -71,6 +78,9 @@ SECTIONS
                 *(.text)
                 _ktext_end = .;
         }
+
+        . = _ktext_base + SIZEOF(.text);
+        _kernel_end = .;
 
         /* Discard unneeded sections */
         /DISCARD/ :

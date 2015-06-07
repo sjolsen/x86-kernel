@@ -130,5 +130,11 @@ void kernel_main (multiboot_info_t* info,
 
 	print_multiboot_memmap (info);
 
+	char buffer [17];
+	vga_put (&vga, "Kernel image start: 0x");
+	vga_putline (&vga, format_uint (buffer, kernel_base, 16, 16));
+	vga_put (&vga, "Kernel image end:   0x");
+	vga_putline (&vga, format_uint (buffer, kernel_base + kernel_size, 16, 16));
+
 	wait ();
 }
