@@ -25,9 +25,14 @@ void null_ISR (__attribute__ ((unused)) INT_index interrupt,
 {
 }
 
+void set_ISR (INT_index interrupt, ISR_t isr)
+{
+	(*ISR_table) [(size_t)interrupt] = isr;
+}
+
 void ISR_table_initialize (ISR_table_t* table, ISR_t default_ISR)
 {
 	ISR_table = table;
 	for (size_t i = 0; i < INT_LIMIT; ++i)
-		(*ISR_table) [i] = default_ISR;
+		set_ISR (i, default_ISR);
 }

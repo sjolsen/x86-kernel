@@ -55,7 +55,7 @@ typedef ISR_t ISR_table_t [INT_LIMIT];
 extern ISR_table_t* ISR_table;
 
 void null_ISR (INT_index interrupt, uint64_t error);
-
+void set_ISR (INT_index interrupt, ISR_t isr);
 void ISR_table_initialize (ISR_table_t* table, ISR_t default_ISR);
 
 #endif
