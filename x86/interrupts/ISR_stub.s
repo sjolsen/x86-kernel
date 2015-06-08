@@ -31,7 +31,7 @@ _ISR_entry:
         popq %rax
         popq %rsi
 	popq %rdi
-        addq 8, %rsp
+        addq $8, %rsp
 	iretq
 
 	.macro .isr number name
