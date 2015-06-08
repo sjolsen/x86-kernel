@@ -117,40 +117,6 @@ void halt_ISR (INT_index interrupt, uint64_t error)
 
 #include "kernel.h"
 
-
-#include "memory/physmem.h"
-
-void print_32b_backwards (uint32_t value)
-{
-	char buffer [33];
-	format_uint (buffer, value, 32, 2);
-	for (char *p = buffer, *q = buffer + 31; p < q; ++p, --q) {
-		char tmp = *p;
-		*p = *q;
-		*q = tmp;
-	}
-	vga_put (&vga, buffer);
-}
-
-void print_allocator (physmem_allocator phy)
-{
-	uint64_t mem_size = (phy.bmp_end - phy.bmp_begin)*64*4096;
-	char buffer [65];
-	vga_put (&vga, "Physical allocator for 0x");
-	vga_put (&vga, format_uint (buffer, (uintptr_t)phy.mem_base, 16, 16));
-	vga_put (&vga, " - 0x");
-	vga_put (&vga, format_uint (buffer, (uintptr_t)phy.mem_base + mem_size - 1, 16, 16));
-	vga_putline (&vga, ":");
-
-	for (uint64_t* block = phy.bmp_begin; block != phy.bmp_end; ++block) {
-		vga_put (&vga, "  ");
-		print_32b_backwards (*block & 0xFFFFFFFF);
-		vga_put (&vga, " ");
-		print_32b_backwards ((*block >> 32) & 0xFFFFFFFF);
-		vga_putline (&vga, "");
-	}
-}
-
 void kernel_main (multiboot_info_t* info,
                   __attribute__ ((unused)) multiboot_uint32_t magic)
 {
@@ -169,31 +135,6 @@ void kernel_main (multiboot_info_t* info,
 	vga_putline (&vga, format_uint (buffer, kernel_base, 16, 16));
 	vga_put (&vga, "Kernel image end:   0x");
 	vga_putline (&vga, format_uint (buffer, kernel_base + kernel_size, 16, 16));
-
-	uint64_t allocbuf [4];
-	physmem_allocator phy = physmem_make_allocator (allocbuf, 0, 4 * 64 * 4096);
-	print_allocator (phy);
-
-	for (int i = 0; i < 70; ++i) {
-		if (!physmem_alloc (&phy).success) {
-			vga_putline (&vga, "Unsuccessful allocation!");
-			halt ();
-		}
-	}
-	print_allocator (phy);
-
-	int pages [] = {8, 6, 7, 5, 3, 0, 9};
-	for (int i = 0; i < 7; ++i)
-		physmem_free (&phy, (uint8_t*)(uintptr_t)(pages [i] * 4096));
-	print_allocator (phy);
-
-	for (int i = 0; i < 10; ++i) {
-		if (!physmem_alloc (&phy).success) {
-			vga_putline (&vga, "Unsuccessful allocation!");
-			halt ();
-		}
-	}
-	print_allocator (phy);
 
 	wait ();
 }
