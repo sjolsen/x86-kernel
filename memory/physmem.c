@@ -54,5 +54,5 @@ void physmem_free (physmem_allocator (*phy), uint8_t* base)
 	uint64_t block = index / 64;
 	uint8_t  bit   = index % 64;
 
-	phy->bmp_begin [block] &= ~(1 << bit);
+	phy->bmp_begin [block] &= ~((uint64_t)1 << bit);
 }
