@@ -6,7 +6,7 @@
 
 enum {
 	VGA_BASE     = 0xB8000,
-	VGA_PORTADDR = 0x0463,
+	VGA_PORTADDR = 0x03D4,
 	VGA_WIDTH    = 80,
 	VGA_HEIGHT   = 25
 };
