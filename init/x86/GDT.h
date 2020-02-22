@@ -48,7 +48,7 @@ typedef struct __attribute__ ((packed)) __attribute__ ((aligned (8))) {
 	uint32_t reserved; // Must be zero
 } TSS_descriptor;
 
-typedef struct __attribute__ ((packed)) {
+typedef struct __attribute__ ((packed)) __attribute__ ((aligned (8))) {
 	GDT_entry GDTEs [4];
 	TSS_descriptor TSSD;
 } GDT;
