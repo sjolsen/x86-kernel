@@ -8,8 +8,6 @@ static TSS_64 tss;
 static PML4_table pml4_table;
 static PDP_table pdp_table;
 static PDP_table high_pdp_table;
-static Page_directory page_directory;
-static Page_table page_table;
 static Page_directory high_page_directory;
 
 static inline
@@ -39,103 +37,23 @@ void paging_initialize (void)
 		.PDPT_address    = (uint32_t) &pdp_table >> 12,
 		.execute_disable = 0
 	};
-	pdp_table [0] = (PDPTE) {
-		.indirect = {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.page_size       = 0, // Must be 0
-			.PD_address      = (uint32_t) &page_directory >> 12,
-			.execute_disable = 0,
-		}
-	};
-	page_directory [0] = (PDE) {
-		.indirect = {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.page_size       = 0, // Must be 0
-			.PT_address      = (uint32_t) &page_table >> 12,
-			.execute_disable = 0,
-		}
-	};
-	for (uint32_t i = ktext32_base >> 12; i < ((ktext32_size + ktext32_base + (1<<12)-1) >> 12); ++i)
-		page_table [i] = (PTE) {
-			.present         = 1,
-			.writable        = 0,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.PAT             = 0,
-			.global          = 1,
-			.page_address    = i,
-			.execute_disable = 0
-		};
-	for (uint32_t i = krodata_base >> 12; i < ((krodata_size + krodata_base + (1<<12)-1) >> 12); ++i)
-		page_table [i] = (PTE) {
-			.present         = 1,
-			.writable        = 0,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.PAT             = 0,
-			.global          = 1,
-			.page_address    = i,
-			.execute_disable = 1
-		};
-	for (uint32_t i = kdata_base >> 12; i < ((kdata_size + kdata_base + (1<<12)-1) >> 12); ++i)
-		page_table [i] = (PTE) {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.PAT             = 0,
-			.global          = 1,
-			.page_address    = i,
-			.execute_disable = 1
-		};
-	for (uint32_t i = kbss_base >> 12; i < ((kbss_size + kbss_base + (1<<12)-1) >> 12); ++i)
-		page_table [i] = (PTE) {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.PAT             = 0,
-			.global          = 1,
-			.page_address    = i,
-			.execute_disable = 1
-		};
-
-	// Identity-map low stuff
-	for (uint32_t i = 0; i < ktext32_base >> 12; ++i)
-		page_table [i] = (PTE) {
-			.present         = 1,
-			.writable        = 1,
-			.user            = 0,
-			.write_through   = 0,
-			.cache_disable   = 0,
-			.accessed        = 0,
-			.dirty           = 0,
-			.PAT             = 0,
-			.global          = 1,
-			.page_address    = i,
-			.execute_disable = 1
+	for (int i = 0; i < 512; ++i)
+		pdp_table [i] = (PDPTE) {
+			.direct = {
+				.present         = 1,
+				.writable        = 1,
+				.user            = 0,
+				.write_through   = 0,
+				.cache_disable   = 0,
+				.accessed        = 0,
+				.dirty           = 0,
+				.page_size       = 1, // Must be 1
+				.global          = 1,
+				.PAT             = 0,
+				.reserved        = 0,
+				.page_address    = i,
+				.execute_disable = 0
+			}
 		};
 
 	// Map the 64-bit code at 0xFFFF800000000000
