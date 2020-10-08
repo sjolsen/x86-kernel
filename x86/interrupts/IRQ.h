@@ -12,7 +12,6 @@ typedef enum {
 	IRQ_LPT2     = 0x05,
 	IRQ_floppy   = 0x06,
 	IRQ_LPT1     = 0x07,
-	IRQ_spurious = 0x07,
 	IRQ_CMOS_RTC = 0x08,
 	IRQ_misc1    = 0x09,
 	IRQ_misc2    = 0x0A,

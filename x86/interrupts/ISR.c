@@ -9,8 +9,19 @@ ISR_table_t* ISR_table;
 
 void ISR_entry (uint32_t interrupt, uint64_t error)
 {
-	if (interrupt == INT_spurious && !IRQ_in_service (INT_LPT1))
+	/* According to https://wiki.osdev.org/8259_PIC#Spurious_IRQs, spurious
+	 * interrupts result in the lowest-priority interrupt being signalled
+	 * (LPT1 for the primary PIC, HDD2 for the secondary PIC). The interrupt
+	 * handler should not be run and EOI should not be signalled for
+	 * spurious interrupts; however the primary PIC still must receive an
+	 * EOI for spurious interrupts proxied from the secondary PIC.
+	 */
+	if (interrupt == INT_LPT1 && !IRQ_in_service (IRQ_LPT1))
 		return;
+	if (interrupt == INT_HDD2 && !IRQ_in_service (IRQ_HDD2)) {
+		IRQ_EOI_master ();
+		return;
+	}
 
 	(*(*ISR_table) [interrupt]) (interrupt, error);
 

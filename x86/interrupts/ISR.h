@@ -33,7 +33,6 @@ typedef enum {
 	INT_LPT2     = 0x25,
 	INT_floppy   = 0x26,
 	INT_LPT1     = 0x27,
-	INT_spurious = 0x27,
 	INT_CMOS_RTC = 0x28,
 	INT_misc1    = 0x29,
 	INT_misc2    = 0x2A,
