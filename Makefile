@@ -1,66 +1,8 @@
-OSNAME = "Unnamed kernel"
-
 include toolchain.mk
 
-NOROMFLAG = -netdev user,id=hostnet0 -device virtio-net-pci,romfile=,netdev=hostnet0 # Kill iPXE option ROM
-override QEMUFLAGS:=$(NOROMFLAG) $(QEMUFLAGS)
+default: all
 
-CSOURCES := $(shell find -name '*.c' -not -path './init/*')
-COBJECTS := $(patsubst %.c,%.c.o,$(CSOURCES))
-CDEPENDS := $(patsubst %.c,%.c.d,$(CSOURCES))
-
-ASMSOURCES := $(shell find -name '*.s' -not -path './init/*')
-ASMOBJECTS := $(patsubst %.s,%.s.o,$(ASMSOURCES))
-
-DEPENDS := $(CDEPENDS)
-OBJECTS := $(COBJECTS) $(ASMOBJECTS)
-
-.PHONY: all depends test test-grub clean cleanall
-
-kernel.bin32: kernel.bin64
-	cp $< $@
-	objcopy -O elf32-i386 $@
-
-kernel.bin64: kernel.ld $(OBJECTS) init/init.o
-	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(OBJECTS) init/init.o
-
-all: kernel.iso kernel.bin64 kernel.bin32
-depends: $(DEPENDS)
-
-test: kernel.bin32
-	qemu-system-x86_64 -kernel $< $(QEMUFLAGS)
-test-grub: kernel.iso
-	qemu-system-x86_64 -cdrom $< $(QEMUFLAGS)
-
-clean:
-	find '(' -name '*.d' -or -name '*.o' ')' -exec rm '{}' ';'
-cleanall: clean
-	rm -f kernel.iso kernel.bin32 kernel.bin64
-
-kernel.iso: kernel.bin64
-	$(eval ISODIR := $(shell mktemp -d))
-	mkdir -p $(ISODIR)
-	mkdir -p $(ISODIR)/boot
-	cp $< $(ISODIR)/boot/
-	mkdir -p $(ISODIR)/boot/grub
-	echo 'menuentry "'"$(OSNAME)"'" {\n multiboot /boot/'"$<"'\n}' > $(ISODIR)/boot/grub/grub.cfg
-	$(GRUB_MKRESCUE) -o $@ $(ISODIR)
-	rm -rf $(ISODIR)
-
--include $(DEPENDS)
-
-$(OBJECTS): Makefile
-
-$(DEPENDS): %.c.d: %.c
-	$(CC) -I. -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
-
-$(COBJECTS): %.c.o: %.c
-	$(CC) $(C64FLAGS) -c -o $@ $<
-
-$(ASMOBJECTS): %.s.o: %.s
-	$(AS) $(AS64FLAGS) -o $@ $<
-
-### Init subdirectory
+### 32-bit initialization code
 
 INIT_CSOURCES := $(shell find ./init -name '*.c')
 INIT_COBJECTS := $(patsubst %.c,%.c.o,$(INIT_CSOURCES))
@@ -90,3 +32,75 @@ $(INIT_COBJECTS): %.c.o: %.c
 
 $(INIT_ASMOBJECTS): %.s.o: %.s
 	$(AS) $(AS32FLAGS) -o $@ $<
+
+### 64-bit C/assembly sources
+
+CSOURCES := $(shell find -name '*.c' -not -path './init/*')
+COBJECTS := $(patsubst %.c,%.c.o,$(CSOURCES))
+CDEPENDS := $(patsubst %.c,%.c.d,$(CSOURCES))
+
+ASMSOURCES := $(shell find -name '*.s' -not -path './init/*')
+ASMOBJECTS := $(patsubst %.s,%.s.o,$(ASMSOURCES))
+
+DEPENDS := $(CDEPENDS)
+OBJECTS := $(COBJECTS) $(ASMOBJECTS)
+
+-include $(DEPENDS)
+
+$(OBJECTS): Makefile
+
+$(DEPENDS): %.c.d: %.c
+	$(CC) -I. -MM $< | sed 's/^\(.*\)\.o:/\1.c.d \1.c.o:/' > $@
+
+$(COBJECTS): %.c.o: %.c
+	$(CC) $(C64FLAGS) -c -o $@ $<
+
+$(ASMOBJECTS): %.s.o: %.s
+	$(AS) $(AS64FLAGS) -o $@ $<
+
+### Kernel images
+
+KERNELS := kernel_main
+
+KIMAGES := $(foreach k,$(KERNELS),./$(k).bin)
+K64IMAGES := $(patsubst %.bin,%.bin64,$(KIMAGES))
+KMAINS := $(patsubst %.bin,%.c.o,$(KIMAGES))
+NONMAINOBJECTS := $(filter-out $(KMAINS),$(OBJECTS))
+
+$(K64IMAGES):%.bin64: kernel.ld $(NONMAINOBJECTS) %.c.o init/init.o
+	$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(NONMAINOBJECTS) $*.c.o init/init.o
+
+$(KIMAGES):%.bin: %.bin64
+	objcopy -O elf32-i386 $< $@
+
+### Meta targets
+
+NOROMFLAG = -netdev user,id=hostnet0 -device virtio-net-pci,romfile=,netdev=hostnet0 # Kill iPXE option ROM
+override QEMUFLAGS:=$(NOROMFLAG) $(QEMUFLAGS)
+
+.PHONY: all init_depends depends test test-grub clean cleanall
+
+all: grub.iso $(KIMAGES)
+depends: $(DEPENDS)
+
+test: kernel_main.bin
+	qemu-system-x86_64 -kernel $< $(QEMUFLAGS)
+test-grub: grub.iso
+	qemu-system-x86_64 -cdrom $< $(QEMUFLAGS)
+
+clean:
+	find '(' -name '*.d' -or -name '*.o' ')' -exec rm '{}' ';'
+cleanall: clean
+	rm -f grub.iso $(KIMAGES) $(K64IMAGES)
+
+grub.iso: $(KIMAGES)
+	$(eval ISODIR := $(shell mktemp -d))
+	mkdir -p $(ISODIR)
+	mkdir -p $(ISODIR)/boot
+	cp $^ $(ISODIR)/boot/
+	mkdir -p $(ISODIR)/boot/grub
+	for k in $(KERNELS); do \
+		echo 'menuentry "'"$$k"'" {\n multiboot /boot/'"$$k.bin"'\n}'; \
+	done > $(ISODIR)/boot/grub/grub.cfg
+	$(GRUB_MKRESCUE) -o $@ $(ISODIR)
+	rm -rf $(ISODIR)
