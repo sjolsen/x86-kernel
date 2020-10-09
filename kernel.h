@@ -28,6 +28,8 @@ extern const void _kernel_start;
 extern const void _kernel_end;
 extern const void _kernel_size;
 
+extern const void _isr_size;
+
 #define _linkaddr(sym) ((uintptr_t)&sym)
 
 #endif

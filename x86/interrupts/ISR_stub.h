@@ -1,6 +1,8 @@
 #ifndef ISR_STUB_H
 #define ISR_STUB_H
 
+#include "kernel.h"
+
 extern void _ISR_00 (void);
 extern void _ISR_01 (void);
 extern void _ISR_02 (void);
@@ -38,5 +40,8 @@ extern void _ISR_2C (void);
 extern void _ISR_2D (void);
 extern void _ISR_2E (void);
 extern void _ISR_2F (void);
+
+#define _LOW_ISR(i) ((void (*)(void))((const char*)&_ISR_00 + (i)*_linkaddr(_isr_size)))
+#define _HIGH_ISR(i) ((void (*)(void))((const char*)&_ISR_20 + (i)*_linkaddr(_isr_size)))
 
 #endif

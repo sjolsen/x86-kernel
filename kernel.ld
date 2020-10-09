@@ -62,4 +62,8 @@ SECTIONS
 
         . = _ktext_lma + SIZEOF(.text);
         _kernel_end = .;
+
+        /* See x86/interrupts/ISR_stub.s */
+        _isr_size = _ISR_01 - _ISR_00;
+        ASSERT(_ISR_2F + _isr_size - _ISR_00 == 36 * _isr_size, "ISRs must be the same size")
 }

@@ -47,6 +47,11 @@ _ISR_entry:
         movabsq \number, %rdi
         movq 16(%rsp), %rsi
         jmp _ISR_entry
+        # The final jmp mnemonic above is assembled into a different encoding
+        # depending on the distance between the source and destination. _ISR_2F
+        # at the farthest takes 0x23 bytes, so pad to that size (that way the
+	# IDT initialization routine can be implemented as a loop).
+        . = \name + 0x23
 	.endm
 
 # Wrapped ISRs
