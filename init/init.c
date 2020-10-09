@@ -56,8 +56,8 @@ void paging_initialize (void)
 			}
 		};
 
-	// Map the 64-bit code at 0xFFFF800000000000
-	pml4_table [256] = (PML4E) {
+	// Map the 64-bit code at 0xFFFFFFFFC0000000
+	pml4_table [511] = (PML4E) {
 		.present         = 1,
 		.writable        = 0,
 		.user            = 0,
@@ -68,7 +68,7 @@ void paging_initialize (void)
 		.PDPT_address    = (uint32_t) &high_pdp_table >> 12,
 		.execute_disable = 0
 	};
-	high_pdp_table [0] = (PDPTE) {
+	high_pdp_table [511] = (PDPTE) {
 		.indirect = {
 			.present         = 1,
 			.writable        = 0,

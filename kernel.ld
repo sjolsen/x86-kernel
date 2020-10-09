@@ -53,7 +53,7 @@ SECTIONS
         } :bss
 
         _ktext_lma = ALIGN(2M);
-        .text 0xFFFF800000000000 : AT(_ktext_lma)
+        .text 0xFFFFFFFFC0000000 : AT(_ktext_lma)
         {
                 _ktext_start = .;
                 *(.text)
