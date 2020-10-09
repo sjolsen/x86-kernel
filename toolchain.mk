@@ -7,7 +7,7 @@ override AS32FLAGS:=$(ASFLAGS) $(AS32FLAGS) -march=i686 --32
 override AS64FLAGS:=$(ASFLAGS) $(AS64FLAGS) --64
 
 CC = gcc
-override CFLAGS:=$(CFLAGS) -I. -std=gnu99 -ffreestanding -fno-pie -mno-sse -Os -Wall -Wextra -Werror
+override CFLAGS:=$(CFLAGS) -I. -std=gnu99 -ffreestanding -fno-asynchronous-unwind-tables -fno-pie -mno-sse -Os -g -Wall -Wextra -Werror
 override C32FLAGS:=$(CFLAGS) $(C32FLAGS) -march=i686 -m32
 override C64FLAGS:=$(CFLAGS) $(C64FLAGS) -m64 -mcmodel=large -mno-red-zone
 

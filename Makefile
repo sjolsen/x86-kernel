@@ -88,6 +88,7 @@ $(KIMAGES):%.elf: %.64.elf
 	@$(ENSUREDIR)
 	@printf "OBJCOPY\t$@\n"
 	@objcopy -O elf32-i386 $< $@
+	@strip -R.comment $@
 
 ### Meta targets
 

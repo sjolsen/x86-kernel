@@ -51,12 +51,4 @@ SECTIONS
 
         . = _ktext_lma + SIZEOF(.text);
         _kernel_end = .;
-
-        /* Discard unneeded sections */
-        /DISCARD/ :
-        {
-                *(.eh_frame)
-                *(.note)
-                *(.comment)
-        }
 }
