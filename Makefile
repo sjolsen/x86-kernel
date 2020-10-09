@@ -82,7 +82,7 @@ NONMAINOBJECTS := $(filter-out $(KMAINS),$(OBJECTS))
 $(K64IMAGES):$(BUILDDIR)/%.64.elf: kernel.ld $(NONMAINOBJECTS) $(BUILDDIR)/%.c.o $(BUILDDIR)/init/init.o
 	@$(ENSUREDIR)
 	@printf "LD\t$@\n"
-	@$(LD) $(LD64FLAGS) --nmagic -T $< -o $@ $(NONMAINOBJECTS) $(BUILDDIR)/$*.c.o $(BUILDDIR)/init/init.o
+	@$(LD) $(LD64FLAGS) --nmagic -Map=$@.map -T $< -o $@ $(NONMAINOBJECTS) $(BUILDDIR)/$*.c.o $(BUILDDIR)/init/init.o
 
 $(KIMAGES):%.elf: %.64.elf
 	@$(ENSUREDIR)
