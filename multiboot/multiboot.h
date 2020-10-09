@@ -269,6 +269,10 @@ struct multiboot_apm_info
   multiboot_uint16_t dseg_len;
 };
 
+extern
+__attribute__ ((section (".multiboot")))
+const struct multiboot_header kernel_header;
+
 #endif /* ! ASM_FILE */
 
 #endif /* ! MULTIBOOT_HEADER */
