@@ -1,3 +1,7 @@
+BUILDDIR?=_build
+
+ENSUREDIR = if [ -n "$(@D)" -a ! -d "$(@D)" ]; then mkdir -p "$(@D)"; fi
+
 AS = as
 override AS32FLAGS:=$(ASFLAGS) $(AS32FLAGS) -march=i686 --32
 override AS64FLAGS:=$(ASFLAGS) $(AS64FLAGS) --64
