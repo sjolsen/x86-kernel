@@ -72,7 +72,7 @@ $(ASMOBJECTS): $(BUILDDIR)/%.s.o: %.s
 
 ### Kernel images
 
-KERNELS := kernel_main
+KERNELS := scanmem
 
 KIMAGES := $(foreach k,$(KERNELS),$(BUILDDIR)/$(k).elf)
 K64IMAGES := $(patsubst %.elf,%.64.elf,$(KIMAGES))
@@ -101,7 +101,7 @@ ALLIMAGES := $(BUILDDIR)/grub.iso $(KIMAGES)
 all: $(ALLIMAGES)
 depends: $(DEPENDS)
 
-test: $(BUILDDIR)/kernel_main.elf
+test: $(BUILDDIR)/scanmem.elf
 	qemu-system-x86_64 -kernel $< $(QEMUFLAGS)
 test-grub: $(BUILDDIR)/grub.iso
 	qemu-system-x86_64 -cdrom $< $(QEMUFLAGS)
