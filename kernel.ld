@@ -30,14 +30,14 @@ SECTIONS
         .text32 :
         {
                 _ktext32_start = .;
-                *(.text32)
+                *(.text32*)
                 _ktext32_end = .;
         } :lowmem
 
         .data :
         {
                 _kdata_start = .;
-                *(.data)
+                *(.data*)
                 _kdata_end = .;
         } :lowmem
 
@@ -46,7 +46,7 @@ SECTIONS
                 _kbss_start = .;
 
                 *(COMMON)
-                *(.bss)
+                *(.bss*)
                 *(.bootstrap_stack)
 
                 _kbss_end = .;
@@ -56,7 +56,7 @@ SECTIONS
         .text 0xFFFFFFFFC0000000 : AT(_ktext_lma)
         {
                 _ktext_start = .;
-                *(.text)
+                *(.text*)
                 _ktext_end = .;
         } :highmem
 

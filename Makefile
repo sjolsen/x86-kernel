@@ -19,7 +19,7 @@ init_depends: $(INIT_DEPENDS)
 $(BUILDDIR)/init/init.o: init/init.ld $(INIT_OBJECTS)
 	@$(ENSUREDIR)
 	@printf "LD\t$@\n"
-	@$(LD) $(LD32FLAGS) -r -T $< -o $@ $(INIT_OBJECTS)
+	@$(LD) $(LD32FLAGS) -r -T $< -o $@ $(INIT_OBJECTS) --entry 'init'
 	@objcopy -G 'init' -O elf64-x86-64 $@
 
 -include $(INIT_DEPENDS)
