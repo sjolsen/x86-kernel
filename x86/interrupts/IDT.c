@@ -53,7 +53,7 @@ void IDT_initialize (IDT* idt)
 	for (uint8_t i = 0x14; i < 0x20; ++i)
 		(*idt) [i] = (IDT_entry) {.present = 0};
 	for (uint8_t i = 0x20; i < 0x30; ++i)
-		(*idt) [i] = make_IDT_entry (_HIGH_ISR(i));
+		(*idt) [i] = make_IDT_entry (_HIGH_ISR(i - 0x20));
 
 	install_IDT (idt);
 }
