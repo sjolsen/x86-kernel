@@ -27,9 +27,9 @@ init_depends: $(INIT_DEPENDS)
 $(BUILDDIR)/init/init.o: init/init.ld $(FIX_RELOC) $(INIT_OBJECTS)
 	@$(ENSUREDIR)
 	@printf "LD\t$@\n"
-	@$(LD) $(LD32FLAGS) -r -T $< -o $@.tmp $(INIT_OBJECTS) --entry 'init'
-	@objcopy -G 'init' -O elf64-x86-64 $@.tmp
-	@$(FIX_RELOC) $@.tmp $@
+	@$(LD) $(LD32FLAGS) -r -T $< -o $@ $(INIT_OBJECTS) --entry 'init'
+	@objcopy -G 'init' -O elf64-x86-64 $@
+	@$(FIX_RELOC) $@ $@
 
 -include $(INIT_DEPENDS)
 

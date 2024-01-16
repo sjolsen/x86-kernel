@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -6,6 +7,16 @@
 #include "format.hh"
 #include "posix_io.hh"
 #include "span.hh"
+
+
+std::vector<unsigned char> read_file(std::filesystem::path path) {
+    // Quick and dirty solution to prevent the input file contents from getting
+    // unmapped when we truncate the output file, if they're the same file
+    RAII<MappedFile> file = MappedFile::open(path);
+    std::vector<unsigned char> result(file->data().size());
+    std::ranges::copy(file->data(), std::begin(result));
+    return result;
+}
 
 
 int64_t resolve_addend(const Elf64_Rel& rel,
@@ -66,10 +77,10 @@ int main(int argc, char** argv) {
         std::cerr << "Usage: fix_relocations in_file out_file\n";
         return EXIT_FAILURE;
     }
-    RAII<MappedFile> in_file = MappedFile::open(argv[1]);
+    std::vector<unsigned char> in_file = read_file(argv[1]);
     std::ofstream out_file(argv[2], std::ios::binary | std::ios::trunc);
 
-    ObjectFile obj = parse_elf(in_file->data());
+    ObjectFile obj = parse_elf(std::span(in_file));
     fix_relocations(obj);
     write_elf(out_file, obj);
 
