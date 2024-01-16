@@ -15,6 +15,9 @@ std::span<const T> extract_section(std::span<const unsigned char> raw,
     return extract_span<T>(raw, sh.sh_offset, Bytes{sh.sh_size});
 }
 
+
+static const unsigned char ELF_MAGIC[4] = {ELFMAG0, 'E', 'L', 'F'};
+
 }  // namespace
 
 
@@ -24,10 +27,9 @@ ObjectFile parse_elf(std::span<const unsigned char> raw) {
 
     // We should be looking at a relocatable x86-64 object file since we're
     // trying to change REL relocations to RELA relocations
-    auto ident = std::span<const unsigned char, EI_NIDENT>{elf->e_ident};
+    auto ident = std::span(elf->e_ident);
     auto magic = ident.subspan(0, 4);
-    static const unsigned char good_magic[4] = {ELFMAG0, 'E', 'L', 'F'};
-    if (!std::ranges::equal(magic, good_magic))
+    if (!std::ranges::equal(magic, ELF_MAGIC))
         throw std::runtime_error("magic does not match");
     if (ident[EI_CLASS] != ELFCLASS64)
         throw std::runtime_error("not a 64-bit ELF file");
@@ -37,6 +39,8 @@ ObjectFile parse_elf(std::span<const unsigned char> raw) {
         throw std::runtime_error("unrecognized ELF version");
     if (ident[EI_OSABI] != ELFOSABI_SYSV)
         throw std::runtime_error("not a System V ABI ELF file");
+    if (ident[EI_ABIVERSION] != 0)
+        throw std::runtime_error("invalid ABI version");
 
     if (elf->e_type != ET_REL)
         throw std::runtime_error("not a relocatable ELF file");
@@ -47,6 +51,9 @@ ObjectFile parse_elf(std::span<const unsigned char> raw) {
 
     obj.entry = elf->e_entry;
     obj.flags = elf->e_flags;
+
+    if (elf->e_phnum != 0)
+        throw std::runtime_error("cannot handle PHDRs");
 
     // Validate the alignment and size of the section header table
     if (elf->e_shentsize != sizeof(Elf64_Shdr))
@@ -132,6 +139,8 @@ public:
     struct Entry {
         std::span<const unsigned char> data;
         size_t offset;
+        size_t align;
+        size_t entsize;
     };
 
 private:
@@ -139,8 +148,8 @@ private:
     size_t _next = 0;
 
 public:
-    void allocate(std::span<const unsigned char> data,
-                  size_t size, size_t align) {
+    Entry allocate(std::span<const unsigned char> data,
+                   size_t size, size_t align, size_t entsize = 0) {
         switch (std::popcount(align)) {
         case 0:
             break;
@@ -152,21 +161,22 @@ public:
         }
         size_t offset = _next;
         _next += size;
-        _entries.emplace_back(data, offset);
+        _entries.emplace_back(data, offset, align, entsize);
+        return _entries.back();
     }
 
     template <typename T>
-    void allocate(const T* data) {
+    Entry allocate(const T* data) {
         auto p = reinterpret_cast<const unsigned char*>(data);
         size_t len = sizeof(T);
-        allocate({p, len}, len, alignof(T));
+        return allocate({p, len}, len, alignof(T), sizeof(T));
     }
 
     template <typename T>
-    void allocate(std::span<T> data) {
+    Entry allocate(std::span<T> data) {
         auto p = reinterpret_cast<const unsigned char*>(data.data());
         size_t len = data.size() * sizeof(T);
-        allocate({p, len}, len, alignof(T));
+        return allocate({p, len}, len, alignof(T), sizeof(T));
     }
 
     std::span<const Entry> entries() const { return _entries; }
@@ -179,8 +189,30 @@ struct match : T... { using T::operator()...; };
 
 
 void write_elf(std::ostream& os, const ObjectFile& obj) {
-    Elf64_Ehdr elf;
+    Elf64_Ehdr elf{};
     std::vector<Elf64_Shdr> shdrs(obj.sections.size());
+
+    auto ident = std::span(elf.e_ident);
+    std::ranges::copy(ELF_MAGIC, std::begin(ident));
+    ident[EI_CLASS] = ELFCLASS64;
+    ident[EI_DATA] = ELFDATA2LSB;
+    ident[EI_VERSION] = EV_CURRENT;
+    ident[EI_OSABI] = ELFOSABI_SYSV;
+    ident[EI_ABIVERSION] = 0;
+    ident[EI_NIDENT] = sizeof(elf.e_ident);
+    elf.e_type = ET_REL;
+    elf.e_machine = EM_X86_64;
+    elf.e_version = EV_CURRENT;
+    elf.e_entry = obj.entry;
+    elf.e_phoff = 0;
+    // e_shoff initialized below
+    elf.e_flags = obj.flags;
+    elf.e_ehsize = sizeof(elf);
+    elf.e_phentsize = 0;
+    elf.e_phnum = 0;
+    elf.e_shentsize = sizeof(Elf64_Shdr);
+    elf.e_shnum = shdrs.size();
+    // e_shstrndx initialized below
 
     // Recompute the contents of .shstrtab
     StringTable shstrtab;
@@ -195,43 +227,72 @@ void write_elf(std::ostream& os, const ObjectFile& obj) {
     // Compute file offsets
     Allocator a;
     a.allocate(&elf);
-    a.allocate(std::span(shdrs));
-    for (const Section& section : obj.sections) {
+    elf.e_shoff = a.allocate(std::span(shdrs)).offset;
+    for (size_t i = 0; i < obj.sections.size(); ++i) {
+        const Section& section = obj.sections[i];
+        Elf64_Shdr& sh = shdrs[i];
+
+        sh.sh_name = sh_names[i];
+        sh.sh_flags = section.flags;
+        sh.sh_addr = section.addr;
+        sh.sh_link = section.link;
+        sh.sh_info = section.info;
+
+        auto allocate = [&](auto&&... args) {
+            Allocator::Entry entry = a.allocate(
+                std::forward<decltype(args)>(args)...);
+            sh.sh_offset = entry.offset;
+            sh.sh_size = entry.data.size();
+            sh.sh_addralign = entry.align;
+            sh.sh_entsize = entry.entsize;
+        };
+
         match visitor {
-            [](const Null&) {},
+            [&](const Null&) {
+                sh.sh_type = SHT_NULL;
+                sh.sh_offset = 0;
+                sh.sh_size = 0;
+                sh.sh_addralign = 0;
+                sh.sh_entsize = 0;
+            },
             [&](const Progbits& data) {
-                a.allocate(data.bytes, data.bytes.size(), section.align);
+                sh.sh_type = SHT_PROGBITS;
+                allocate(data.bytes, data.bytes.size(), section.align);
             },
             [&](const Nobits& data) {
-                a.allocate({}, 0, section.align);
+                sh.sh_type = SHT_NOBITS;
+                allocate(std::span<const unsigned char>{}, 0, section.align);
             },
             [&](const Rel& data) {
-                a.allocate(data.rels);
+                sh.sh_type = SHT_REL;
+                allocate(data.rels);
             },
             [&](const Rela& data) {
-                a.allocate(std::span(data.relas));
+                sh.sh_type = SHT_RELA;
+                allocate(std::span(data.relas));
             },
             [&](const Symtab& data) {
-                a.allocate(data.symbols);
+                sh.sh_type = SHT_SYMTAB;
+                allocate(data.symbols);
             },
             [&](const Strtab& data) {
-                a.allocate(data.strings);
+                sh.sh_type = SHT_STRTAB;
+                allocate(data.strings);
             },
             [&](const ShStrtab&) {
-                a.allocate(shstrtab.get());
+                sh.sh_type = SHT_STRTAB;
+                allocate(shstrtab.get());
+                elf.e_shstrndx = i;
             },
         };
         std::visit(visitor, section.data);
     }
 
-    // Populate the headers
-    // TODO
-
     // Write out the bytes
-    // TODO
-
-    std::cout << std::hex;
+    os.exceptions(os.exceptions() | std::ostream::failbit);
     for (const Allocator::Entry& entry : a.entries()) {
-        std::cout << entry.offset << " " << entry.data.size() << std::endl;
+        os.seekp(entry.offset);
+        os.write(reinterpret_cast<const char*>(entry.data.data()),
+                 entry.data.size());
     }
 }
