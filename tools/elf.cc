@@ -82,7 +82,7 @@ ObjectFile parse_elf(std::span<const unsigned char> raw) {
             s.data.emplace<Progbits>(extract_section<unsigned char>(raw, sh));
             break;
         case SHT_NOBITS:
-            s.data.emplace<Nobits>();
+            s.data.emplace<Nobits>(sh.sh_size);
             break;
         case SHT_REL:
             s.data.emplace<Rel>(extract_section<Elf64_Rel>(raw, sh));
@@ -104,3 +104,5 @@ ObjectFile parse_elf(std::span<const unsigned char> raw) {
 
     return obj;
 }
+
+void write_elf(std::ostream& os, const ObjectFile& obj);

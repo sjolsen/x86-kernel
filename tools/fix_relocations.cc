@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 
 #include "elf.hh"
 #include "format.hh"
@@ -32,17 +33,29 @@ int64_t resolve_addend(const Elf64_Rel& rel,
 }
 
 
-void fix_relocations(ObjectFile& obj) {
-    for (const auto& section : obj.sections) {
-        if (const Rel* data = std::get_if<Rel>(&section.data)) {
-            std::cout << section.name << std::endl;
+std::string rename_section(std::string_view name) {
+    std::string result{name};
+    if (!name.starts_with(".rel."))
+        throw std::runtime_error(strcat("couldn't parse section name: ", name));
+    result.insert(4, "a");
+    return result;
+}
 
+
+void fix_relocations(ObjectFile& obj) {
+    for (auto& section : obj.sections) {
+        if (const Rel* data = std::get_if<Rel>(&section.data)) {
             const Section& target = obj.sections[section.info];
             const Progbits& progbits = std::get<Progbits>(target.data);
+
+            std::vector<Elf64_Rela> relas;
             for (Elf64_Rel rel : data->rels) {
                 int64_t addend = resolve_addend(rel, progbits.bytes);
-                std::cout << addend << std::endl;
+                relas.push_back({rel.r_offset, rel.r_info, addend});
             }
+
+            section.name = rename_section(section.name);
+            section.data.emplace<Rela>(std::move(relas));
         }
     }
 }
@@ -54,10 +67,11 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
     RAII<MappedFile> in_file = MappedFile::open(argv[1]);
-    std::filesystem::path out_file = argv[2];
+    std::ofstream out_file(argv[2], std::ios::binary | std::ios::trunc);
 
     ObjectFile obj = parse_elf(in_file->data());
     fix_relocations(obj);
+    write_elf(out_file, obj);
 
     return EXIT_SUCCESS;
 }

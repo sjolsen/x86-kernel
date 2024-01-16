@@ -22,7 +22,7 @@
 
 struct Null {};
 struct Progbits { std::span<const unsigned char> bytes; };
-struct Nobits {};
+struct Nobits { size_t size; };
 struct Rel { std::span<const Elf64_Rel> rels; };
 struct Rela { std::vector<Elf64_Rela> relas; };
 struct Symtab { std::span<const Elf64_Sym> symbols; };
