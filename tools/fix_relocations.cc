@@ -1,8 +1,11 @@
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <span>
+#include <vector>
 
 #include <elf.h>
 #include <fcntl.h>
@@ -100,6 +103,15 @@ T* safe_at(const std::span<T, N>& a, size_t i) {
 }
 
 
+template <typename T, size_t N>
+std::span<T> safe_subspan(const std::span<T, N>& a, size_t offset, size_t n) {
+    // TODO: arithmetic overflow checks
+    if (offset + n >= a.size())
+        throw std::out_of_range("span bound exceeded");
+    return a.subspan(offset, n);
+}
+
+
 template <typename T>
 const T* extract_header(std::span<const unsigned char> raw) {
     auto address = reinterpret_cast<uintptr_t>(raw.data());
@@ -122,6 +134,15 @@ std::span<const T> extract_span(std::span<const unsigned char> raw,
     if (raw.size() < offset + sizeof(T) * n)
         throw std::runtime_error("exceeded file bounds");
     return std::span(reinterpret_cast<const T*>(address), n);
+}
+
+
+template <typename T>
+T extract_value(std::span<const unsigned char> raw, size_t offset) {
+    T result;
+    auto bytes = safe_subspan<const unsigned char>(raw, offset, sizeof(T));
+    memcpy(&result, bytes.data(), sizeof(T));
+    return result;
 }
 
 
@@ -168,11 +189,65 @@ void parse_elf(std::span<const unsigned char> raw) {
         throw std::runtime_error(
             "section header string table is not NUL-terminated");
 
+    // Associate section names with their contents. This will be necessary when
+    // reading the implicit addend
+    std::map<std::string_view, std::span<const unsigned char>> name_to_contents;
+    for (const auto& sh : section_headers) {
+        std::string_view name = safe_at(section_names, sh.sh_name);
+        auto contents = extract_span<const unsigned char>(
+            raw, sh.sh_offset, sh.sh_size);
+        name_to_contents.insert({name, contents});
+    }
+
     // Locate the implicit relocation sections
     for (const auto& sh : section_headers)
         if (sh.sh_type == SHT_REL) {
+            // By convention section ".relNAME" contains relocation information
+            // for section "NAME" (note that "NAME" itself will have a leading
+            // dot).
             std::string_view name = safe_at(section_names, sh.sh_name);
-            std::cout << name << std::endl;
+            if (!name.starts_with(".rel."))
+                throw std::runtime_error(
+                    strcat("could not parse section name", name));
+            std::string_view section_name = name.substr(4);
+            std::span<const unsigned char> section_contents =
+                name_to_contents.at(section_name);
+            std::cout << name << " " << section_name << std::endl;
+
+            // Construct a new RELA for each REL
+            auto rels = extract_span<Elf64_Rel>(
+                raw, sh.sh_offset, sh.sh_size / sizeof(Elf64_Rel));
+            std::vector<Elf64_Rela> relas;
+            relas.reserve(rels.size());
+            for (const auto& rel : rels) {
+                auto type = ELF64_R_TYPE(rel.r_info);
+                switch (type) {
+                    case R_X86_64_PC32: {
+                        /* PC relative 32 bit signed */
+                        uint32_t addend32 = le32toh(
+                            extract_value<uint32_t>(
+                                section_contents, rel.r_offset));
+                        int64_t addend64 = static_cast<int32_t>(addend32);
+                        relas.push_back({rel.r_offset, rel.r_info, addend64});
+                        break;
+                    }
+                    case R_X86_64_32: {
+                        /* Direct 32 bit zero extended */
+                        uint32_t addend32 = le32toh(
+                            extract_value<uint32_t>(
+                                section_contents, rel.r_offset));
+                        int64_t addend64 = static_cast<uint64_t>(addend32);
+                        relas.push_back({rel.r_offset, rel.r_info, addend64});
+                        break;
+                    }
+                    default:
+                        auto msg = strcat("unrecognized relocation type", type);
+                        throw std::runtime_error(msg);
+                };
+            }
+
+            for (const auto& rela : relas)
+                std::cout << rela.r_addend << std::endl;
         }
 }
 
