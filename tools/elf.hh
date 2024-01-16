@@ -3,12 +3,13 @@
 
 #include <iostream>
 #include <span>
+#include <variant>
+#include <vector>
+
+#include <elf.h>
 
 
-class Section;
-
-
-/* We only represent relocatable x86-64 object files since we're trying to
+/* We only represent relocatable x86-64 object files since we're only trying to
  * change REL relocations to RELA relocations. Simplifying assumptions include:
  *
  *   - Fixed values for most ELF header fields
@@ -18,25 +19,39 @@ class Section;
  *   - No dynamic section
  *   - No notes, interpreter, or version information
  */
-class ObjectFile {
-private:
-    Elf64_Addr _entry;
-    std::set<Section> _sections;
-    uint32_t _flags;
 
-    explicit ObjectFile(Elf64_Addr entry,
-                        std::set<Section> sections,
-                        uint32_t flags)
-        : _entry(entry),
-          _sections(std::move(sections)),
-          _flags(flags) {
-    }
+struct Null {};
+struct Progbits { std::span<const unsigned char> bytes; };
+struct Nobits {};
+struct Rel { std::span<const Elf64_Rel> rels; };
+struct Rela { std::vector<Elf64_Rela> relas; };
+struct Symtab { std::span<const Elf64_Sym> symbols; };
+struct Strtab { std::span<const char> strings; };
+struct ShStrtab {};
 
-public:
-    static ObjectFile parse(std::span<const unsigned char> raw);
+using SectionData = std::variant<
+    Null, Progbits, Nobits, Rel, Rela, Symtab, Strtab, ShStrtab>;
 
-    void serialize(std::ostream& os) const;
+
+struct Section {
+    std::string name;
+    uint64_t flags;
+    Elf64_Addr addr;
+    SectionData data;
+    uint32_t link;
+    uint32_t info;
+    uint64_t align;
 };
 
+
+struct ObjectFile {
+    Elf64_Addr entry;
+    std::vector<Section> sections;
+    uint32_t flags;
+};
+
+
+ObjectFile parse_elf(std::span<const unsigned char> raw);
+void write_elf(std::ostream& os, const ObjectFile& obj);
 
 #endif  // X86_KERNEL_ELF_HH

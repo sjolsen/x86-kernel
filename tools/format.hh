@@ -1,7 +1,7 @@
 #ifndef X86_KERNEL_FORMAT_HH
 #define X86_KERNEL_FORMAT_HH
 
-#include <iostream>
+#include <sstream>
 
 
 template <typename... T>
