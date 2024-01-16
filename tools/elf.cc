@@ -138,6 +138,7 @@ class Allocator {
 public:
     struct Entry {
         std::span<const unsigned char> data;
+        size_t vmsize;
         size_t offset;
         size_t align;
         size_t entsize;
@@ -149,7 +150,7 @@ private:
 
 public:
     Entry allocate(std::span<const unsigned char> data,
-                   size_t size, size_t align, size_t entsize = 0) {
+                   size_t vmsize, size_t align, size_t entsize = 0) {
         switch (std::popcount(align)) {
         case 0:
             break;
@@ -160,8 +161,8 @@ public:
             _next = align * ((_next + (align - 1)) / align);
         }
         size_t offset = _next;
-        _next += size;
-        _entries.emplace_back(data, offset, align, entsize);
+        _next += data.size();
+        _entries.emplace_back(data, vmsize, offset, align, entsize);
         return _entries.back();
     }
 
@@ -242,7 +243,7 @@ void write_elf(std::ostream& os, const ObjectFile& obj) {
             Allocator::Entry entry = a.allocate(
                 std::forward<decltype(args)>(args)...);
             sh.sh_offset = entry.offset;
-            sh.sh_size = entry.data.size();
+            sh.sh_size = entry.vmsize;
             sh.sh_addralign = entry.align;
             sh.sh_entsize = entry.entsize;
         };
@@ -261,7 +262,8 @@ void write_elf(std::ostream& os, const ObjectFile& obj) {
             },
             [&](const Nobits& data) {
                 sh.sh_type = SHT_NOBITS;
-                allocate(std::span<const unsigned char>{}, 0, section.align);
+                allocate(std::span<const unsigned char>{},
+                         data.size, section.align);
             },
             [&](const Rel& data) {
                 sh.sh_type = SHT_REL;
