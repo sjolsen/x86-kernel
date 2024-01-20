@@ -2,6 +2,14 @@ include toolchain.mk
 
 default: all
 
+### Build tools
+
+FIX_RELOC = $(BUILDDIR)/fix_relocations
+
+.PHONY: $(FIX_RELOC)
+$(FIX_RELOC):
+	$(MAKE) -C tools ../$@
+
 ### 32-bit initialization code
 
 INIT_CSOURCES := $(shell find ./init -name '*.c' | xargs realpath --relative-to=.)
@@ -16,11 +24,12 @@ INIT_OBJECTS := $(INIT_COBJECTS) $(INIT_ASMOBJECTS)
 
 init_depends: $(INIT_DEPENDS)
 
-$(BUILDDIR)/init/init.o: init/init.ld $(INIT_OBJECTS)
+$(BUILDDIR)/init/init.o: init/init.ld $(FIX_RELOC) $(INIT_OBJECTS)
 	@$(ENSUREDIR)
 	@printf "LD\t$@\n"
 	@$(LD) $(LD32FLAGS) -r -T $< -o $@ $(INIT_OBJECTS) --entry 'init'
 	@objcopy -G 'init' -O elf64-x86-64 $@
+	@$(FIX_RELOC) $@ $@
 
 -include $(INIT_DEPENDS)
 
