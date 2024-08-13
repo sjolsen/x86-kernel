@@ -101,7 +101,7 @@ $(KIMAGES):%.elf: %.64.elf
 
 ### Meta targets
 
-NOROMFLAG = -netdev user,id=hostnet0 -device virtio-net-pci,romfile=,netdev=hostnet0 # Kill iPXE option ROM
+NOROMFLAG = -net none # Kill iPXE option ROM
 override QEMUFLAGS:=$(NOROMFLAG) $(QEMUFLAGS)
 
 ALLIMAGES := $(BUILDDIR)/grub.iso $(KIMAGES)
